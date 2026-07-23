@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>WordWise</title>
+<!-- PWA -->
+<meta name="theme-color" content="#0D1B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WordWise">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="WordWise">
+<meta name="description" content="Học từ vựng tiếng Anh offline — miễn phí, không cần internet">
+<link rel="manifest" href="manifest.json">
+<!-- PWA icons: file PNG thật, thay cho SVG data-URI trước đây để Android/Chrome nhận diện ổn định hơn -->
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1B2A;--bg2:#0A1520;--bg3:#132233;--bg4:#1A2E42;--border:#1E3347;
+  --text:#F0EDE6;--text2:#8FA3B1;--text3:#3A5268;
+  --ac:#00C9A7;--a2:#00A389;--red:#FF6B6B;--yel:#FFB347;--pur:#9B7FD4;--blu:#4D9EFF;
+  --r:14px;--rs:9px;--sw:218px;--fs:14px;--fsr:1;
+}
+[data-theme=light]{
+  --bg:#EEF4FA;--bg2:#FFFFFF;--bg3:#E4EFF7;--bg4:#D2E3EF;--border:#BDD0DE;
+  --text:#0D1B2A;--text2:#3D5A6C;--text3:#92AEBB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:var(--fs)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+header{height:50px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;position:sticky;top:0;z-index:100;flex-shrink:0}
+.logo{font-family:'Bricolage Grotesque',sans-serif;font-size:calc(18px * var(--fsr));font-weight:700;color:var(--text);letter-spacing:-.5px}
+.logo span{color:var(--ac)}
+.hright{margin-left:auto;display:flex;align-items:center;gap:7px}
+.streak{display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);padding:3px 10px;border-radius:20px;font-size:calc(12px * var(--fsr));font-weight:600;color:var(--yel)}
+.hbtn{width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fsr));transition:all .14s}
+.hbtn:hover{background:var(--bg4);color:var(--text)}
+.fs-ctrl{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.fs-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 7px;font-size:calc(12px * var(--fsr));transition:color .14s;font-family:'Inter',sans-serif}
+.fs-btn:hover{color:var(--text)}
+.fs-lbl{font-size:calc(10px * var(--fsr));color:var(--text3);min-width:20px;text-align:center}
+
+.app{display:flex;flex:1;overflow:hidden;height:calc(100vh - 50px)}
+
+/* SIDEBAR */
+.sb{width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;transition:transform .25s}
+.sb-sec{padding:10px 10px 8px;border-bottom:1px solid var(--border)}
+.sb-sec:last-child{border-bottom:none;flex:1}
+.stl{font-size:calc(9px * var(--fsr));font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;padding:0 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--rs);cursor:pointer;color:var(--text2);font-size:calc(12px * var(--fsr));font-weight:500;transition:all .13s;margin-bottom:2px;border:1px solid transparent}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(0,201,167,.1);color:var(--ac);border-color:rgba(0,201,167,.18)}
+.ni .ic{font-size:calc(13px * var(--fsr));width:16px;text-align:center;flex-shrink:0}
+
+/* MODE RADIO */
+.mr{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:var(--rs);cursor:pointer;border:1px solid var(--border);background:var(--bg3);transition:all .13s;margin-bottom:4px}
+.mr:hover{border-color:var(--ac)}
+.mr.sel{border-color:var(--ac);background:rgba(0,201,167,.08)}
+.rdot{width:13px;height:13px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .13s;display:flex;align-items:center;justify-content:center}
+.mr.sel .rdot{border-color:var(--ac);background:var(--ac)}
+.rdot::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--bg2);display:none}
+.mr.sel .rdot::after{display:block}
+.ml{font-size:calc(12px * var(--fsr));font-weight:500;flex:1}
+.md{font-size:calc(10px * var(--fsr));color:var(--text2)}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:18px 22px}
+
+/* HOME TAB CARDS (nhóm lớn) — compact, gọn theo thiết kế tham khảo */
+/* Thẻ bọc ngoài "Nhóm từ vựng": tiêu đề + 2 nút ngẫu nhiên (pill) + hàng tab, tất cả trong 1 khung */
+.vgroup-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.vgroup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.vgroup-title{display:flex;align-items:center;gap:8px;font-size:calc(14px*var(--fsr));font-weight:700}
+.vgroup-title::before{content:'';display:block;width:3px;height:16px;background:var(--ac);border-radius:2px}
+.pill-row{display:flex;gap:7px;flex-wrap:wrap}
+.pill-rnd{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;font-size:calc(11.5px*var(--fsr));font-weight:600;cursor:pointer;border:1px solid;transition:all .13s;white-space:nowrap}
+.pill-rnd.grp{background:rgba(255,107,107,.07);border-color:rgba(255,107,107,.25);color:#ff6b6b}
+.pill-rnd.grp:hover{background:rgba(255,107,107,.14)}
+.pill-rnd.mix{background:rgba(77,158,255,.07);border-color:rgba(77,158,255,.28);color:var(--blu)}
+.pill-rnd.mix:hover{background:rgba(77,158,255,.14)}
+/* Hàng 5 tab chính (Phổ thông/A1-A2/.../Gốc từ) — compact, badge % phẳng thay vì ring SVG to */
+.htabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}
+.htab{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--rs);padding:9px 8px;cursor:pointer;transition:all .14s;position:relative;text-align:center}
+.htab:hover{border-color:var(--ac)}
+.htab.on{border-color:var(--ac);background:rgba(0,201,167,.08)}
+.htab-badge{position:absolute;top:6px;right:7px;font-size:calc(9px*var(--fsr));font-weight:700;color:var(--ac);background:rgba(0,201,167,.12);border-radius:20px;padding:1px 6px;line-height:1.5}
+.htab-ico{font-size:calc(19px*var(--fsr));margin-bottom:4px}
+.htab-name{font-size:calc(11px*var(--fsr));font-weight:700;color:var(--text);line-height:1.25}
+
+/* ── DETAIL PANEL — hiện khi đã chọn 1 tab (icon+tên+badge+mô tả+ring lớn+4 ô thống kê) ── */
+.gdetail{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.gdetail-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.gdetail-ico{width:44px;height:44px;border-radius:11px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:calc(21px*var(--fsr));flex-shrink:0}
+.gdetail-mid{flex:1;min-width:0}
+.gdetail-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:calc(14.5px*var(--fsr));font-weight:700}
+.gdetail-badge{font-size:calc(9.5px*var(--fsr));font-weight:700;color:var(--ac);background:rgba(0,201,167,.12);padding:2px 8px;border-radius:20px}
+.gdetail-sub{font-size:calc(11.5px*var(--fsr));color:var(--text2);margin-top:2px}
+.gdetail-desc{font-size:calc(11.5px*var(--fsr));color:var(--text2);line-height:1.6;margin-bottom:12px}
+.gstat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.gstat-mini{background:var(--bg3);border-radius:var(--rs);padding:8px 6px;text-align:center}
+.gstat-ico{font-size:calc(13px*var(--fsr));margin-bottom:3px}
+.gstat-val{font-size:calc(14px*var(--fsr));font-weight:700;font-family:'DM Mono',monospace;color:var(--text)}
+.gstat-lbl{font-size:calc(9px*var(--fsr));color:var(--text3);margin-top:1px}
+
+/* ── Danh sách con (unit/chủ đề/gốc từ) — tiêu đề + lưới 2 cột nằm ngang gọn ── */
+.list-head{display:flex;align-items:center;justify-content:space-between;margin:14px 0 9px}
+.list-title{font-size:calc(13px*var(--fsr));font-weight:700}
+.expand-toggle{text-align:center;margin-top:10px}
+.expand-toggle button{background:none;border:1px solid var(--border);border-radius:20px;padding:7px 18px;font-size:calc(11.5px*var(--fsr));color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;transition:all .13s}
+.expand-toggle button:hover{border-color:var(--ac);color:var(--ac)}
+
+/* BRANCH SUMMARY ROW */
+.branch-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;font-size:calc(12px * var(--fsr));color:var(--text2)}
+/* ── 2 nút ngẫu nhiên trong màn drill-down (openGrade/openLeaf cũ) ── */
+.rnd2-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.rnd2-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--rs);font-size:calc(12px * var(--fsr));font-weight:600;cursor:pointer;border:1px solid;transition:all .14s;font-family:'Inter',sans-serif;flex:1;justify-content:center;min-width:130px}
+.rnd2-btn.rnd-grp{background:rgba(0,201,167,.06);border-color:rgba(0,201,167,.28);color:var(--ac)}
+.rnd2-btn.rnd-grp:hover{background:rgba(0,201,167,.14)}
+.rnd2-btn.rnd-mix{background:rgba(77,158,255,.06);border-color:rgba(77,158,255,.28);color:var(--blu)}
+.rnd2-btn.rnd-mix:hover{background:rgba(77,158,255,.14)}
+.rnd-scope{color:var(--yel);border-color:rgba(255,179,71,.3);background:rgba(255,179,71,.08)}
+.rnd-scope:hover{background:rgba(255,179,71,.16);color:var(--yel)}
+.rnd-banner{display:flex;justify-content:center;margin-bottom:14px}
+.rnd-banner-btn{display:flex;align-items:center;gap:8px;padding:9px 22px;border-radius:30px;background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.35);color:var(--yel);font-size:calc(13px * var(--fsr));font-weight:600;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.rnd-banner-btn:hover{background:rgba(255,179,71,.2);transform:translateY(-1px)}
+
+/* BRANCH / LEAF GRID — 2 cột, thẻ NGANG gọn (icon trái + tên/số từ giữa + ring nhỏ phải) */
+.bgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:1000px){.bgrid{grid-template-columns:repeat(3,1fr)}}
+.bcard{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 10px;cursor:pointer;transition:all .14s}
+.bcard:hover{border-color:var(--ac);background:rgba(0,201,167,.04)}
+.bc-icobox{width:34px;height:34px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:calc(16px*var(--fsr));flex-shrink:0}
+.bc-mid{flex:1;min-width:0}
+.bc-name{font-size:calc(11.5px * var(--fsr));font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-cnt{font-size:calc(10px * var(--fsr));color:var(--text2);margin-top:1px}
+.bc-sub{font-size:calc(9px * var(--fsr));color:var(--text3);margin-top:1px}
+/* SVG ring — kích thước tùy theo tham số truyền vào ring(pct,size) */
+.ring-wrap{position:relative;flex-shrink:0}
+.ring-wrap svg{display:block;transform:rotate(-90deg)}
+.rb{fill:none;stroke:var(--border)}
+.rf{fill:none;stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .4s}
+.rpct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ac);font-family:'DM Mono',monospace;pointer-events:none}
+
+/* BREADCRUMB */
+.bcrumb{display:flex;align-items:center;gap:5px;margin-bottom:13px;font-size:calc(12px * var(--fsr));color:var(--text2);flex-wrap:wrap}
+.bci{cursor:pointer;transition:color .13s}
+.bci:hover{color:var(--ac)}
+.bcsep{color:var(--text3)}
+.bccur{color:var(--text);font-weight:600}
+
+/* LEAF ACTIONS */
+.leaf-acts{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.la{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);font-size:calc(13px * var(--fsr));font-weight:600;cursor:pointer;border:1px solid;transition:all .14s;font-family:'Inter',sans-serif}
+.la.study{background:rgba(77,158,255,.08);border-color:rgba(77,158,255,.25);color:var(--blu)}
+.la.study:hover{background:rgba(77,158,255,.15)}
+.la.practice{background:var(--ac);border-color:var(--ac);color:#0D1B2A}
+.la.practice:hover{background:var(--a2)}
+
+/* ROOT DETAIL CARD */
+.root-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px}
+.root-title{font-family:'DM Mono',monospace;font-size:calc(18px * var(--fsr));font-weight:500;color:var(--ac);margin-bottom:4px}
+.root-row{display:flex;gap:8px;font-size:calc(12px * var(--fsr));color:var(--text2);flex-wrap:wrap}
+.root-tag{background:var(--bg4);padding:2px 8px;border-radius:20px;font-size:calc(10px * var(--fsr))}
+
+/* WORD STUDY CARDS */
+.wsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+.wscard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;transition:border-color .13s}
+.wscard:hover{border-color:rgba(0,201,167,.25)}
+.ws-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.ws-word{font-family:'DM Mono',monospace;font-size:calc(15px * var(--fsr));font-weight:500;color:var(--text)}
+.ws-ph{font-size:calc(11px * var(--fsr));color:var(--ac)}
+.ws-pos{font-size:calc(10px * var(--fsr));padding:2px 7px;border-radius:20px;background:rgba(0,201,167,.1);color:var(--ac);font-weight:600;flex-shrink:0}
+.ws-mean{font-size:calc(13px * var(--fsr));font-weight:600;color:var(--text);margin-bottom:4px}
+.ws-col{font-size:calc(11px * var(--fsr));color:var(--blu);margin-bottom:3px}
+.ws-ex{font-size:calc(11px * var(--fsr));color:var(--text2);font-style:italic;line-height:1.6}
+.ws-meta{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.mtag{font-size:calc(10px * var(--fsr));padding:2px 7px;border-radius:20px;background:var(--bg3);color:var(--text2)}
+.spk{background:none;border:none;cursor:pointer;color:var(--text3);font-size:calc(13px * var(--fsr));padding:2px;line-height:1;transition:color .13s;flex-shrink:0}
+.spk:hover{color:var(--ac)}
+
+/* LEVEL BADGES */
+.lv{display:inline-block;padding:2px 7px;border-radius:20px;font-size:calc(10px * var(--fsr));font-weight:700}
+.A1{background:rgba(16,185,129,.12);color:#10B981}
+.A2{background:rgba(52,211,153,.12);color:#34D399}
+.B1{background:rgba(255,179,71,.12);color:var(--yel)}
+.B2{background:rgba(255,107,107,.12);color:var(--red)}
+.C1{background:rgba(155,127,212,.15);color:var(--pur)}
+.C2{background:rgba(155,127,212,.25);color:var(--pur)}
+
+/* GAME */
+/* Practice wrapper — cỡ chữ được điều khiển bởi CHUNG 1 biến --fsr (nút A-/A+ ở header),
+   không còn dùng riêng --pscale nữa. Vì --fsr là custom property kế thừa từ :root,
+   mọi thay đổi ở header sẽ tự động áp dụng xuống đây mà không cần render lại. */
+#practice-wrap{font-size:calc(14px * var(--fsr))}
+#practice-wrap .q-word{font-size:calc(2.28em)}
+#practice-wrap .q-ph,#practice-wrap .q-pos{font-size:0.93em}
+#practice-wrap .q-col,#practice-wrap .q-ex{font-size:0.86em}
+#practice-wrap .obtn{font-size:0.93em}
+#practice-wrap .mitem{font-size:0.86em}
+#practice-wrap .tinput{font-size:1em}
+#practice-wrap .gstat{font-size:0.86em}
+#practice-wrap .sbtn{font-size:1.2em}
+#practice-wrap .srow{font-size:0.86em}
+.ghdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.pbar{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--ac),#7FFFED);border-radius:3px;transition:width .3s}
+.gstat{font-size:calc(12px*var(--fsr));color:var(--text2);white-space:nowrap}
+.tdsp{font-family:'DM Mono',monospace;font-size:calc(18px*var(--fsr));font-weight:500;color:var(--yel);min-width:50px;text-align:right}
+.tdsp.danger{color:var(--red);animation:blink .5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+.qcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:13px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.q-src{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.q-word{font-family:'DM Mono',monospace;font-size:calc(32px*var(--fsr));font-weight:600;color:var(--text);margin-bottom:4px}
+.q-ph{font-size:calc(14px*var(--fsr));color:var(--ac);margin-bottom:3px}
+.q-pos{font-size:calc(12px*var(--fsr));color:var(--text2);font-style:italic;margin-bottom:6px}
+.q-col{font-size:calc(13px*var(--fsr));color:var(--blu);margin-bottom:5px;text-align:center}
+.q-ex{font-size:calc(13px*var(--fsr));color:var(--text2);font-style:italic;line-height:1.6;margin-bottom:4px;text-align:center}
+.q-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}
+.spkbtn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:calc(16px * var(--fsr));padding:3px;line-height:1;transition:color .13s}
+.spkbtn:hover{color:var(--ac)}
+.srow{display:flex;align-items:center;gap:3px;margin-top:8px}
+.sbtn{background:none;border:none;cursor:pointer;font-size:calc(17px*var(--fsr));transition:transform .1s;color:var(--border)}
+.sbtn.lit{color:var(--yel)}
+.sbtn:hover{transform:scale(1.2)}
+
+/* INFO TOGGLE */
+.itogs{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.itog{padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:calc(10px * var(--fsr));font-weight:600;transition:all .13s;font-family:'Inter',sans-serif}
+.itog.on{border-color:var(--ac);color:var(--ac);background:rgba(0,201,167,.07)}
+
+/* OPTIONS */
+.ogrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:420px;margin:0 auto}
+.obtn{padding:11px 14px;border-radius:var(--rs);border:2px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:calc(13px*var(--fsr));font-weight:500;transition:all .13s;text-align:center;font-family:'Inter',sans-serif}
+.obtn:hover:not(:disabled){border-color:var(--ac);background:rgba(0,201,167,.07)}
+.obtn.correct{border-color:var(--ac)!important;background:rgba(0,201,167,.12)!important;color:var(--ac)}
+.obtn.wrong{border-color:var(--red)!important;background:rgba(255,107,107,.1)!important;color:var(--red)}
+.obtn:disabled{cursor:default}
+
+/* MATCHING */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mcol{display:flex;flex-direction:column;gap:6px}
+.mitem{padding:10px 12px;border-radius:var(--rs);border:2px solid var(--border);background:var(--bg3);cursor:pointer;font-size:calc(13px*var(--fsr));font-weight:500;transition:all .13s;text-align:center;line-height:1.4}
+.mitem:hover:not(.matched):not(.shake){border-color:var(--ac);background:rgba(0,201,167,.07)}
+.mitem.sel{border-color:var(--ac);background:rgba(0,201,167,.14)}
+.mitem.matched{border-color:var(--ac);background:rgba(0,201,167,.08);color:var(--ac);cursor:default}
+.mitem.shake{border-color:var(--red);background:rgba(255,107,107,.08);animation:shk .3s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* TYPING */
+.tinput{width:100%;padding:11px;border-radius:var(--rs);border:2px solid var(--border);background:var(--bg3);color:var(--text);font-size:calc(14px*var(--fsr));font-family:'Inter',sans-serif;outline:none;transition:border-color .13s;margin-top:10px}
+.tinput:focus{border-color:var(--ac)}
+.tinput.correct{border-color:var(--ac)}
+.tinput.wrong{border-color:var(--red)}
+
+/* RESULT */
+.rcard{text-align:center;padding:26px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.rscore{font-family:'DM Mono',monospace;font-size:calc(50px * var(--fsr));font-weight:500;color:var(--ac)}
+.rlbl{font-size:calc(13px * var(--fsr));color:var(--text2);margin-bottom:16px}
+.wlist{background:var(--bg3);border-radius:var(--rs);padding:11px;text-align:left;margin-top:11px;max-height:230px;overflow-y:auto}
+.witem{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:calc(12px * var(--fsr))}
+.witem:last-child{border-bottom:none}
+.wen{font-weight:600;color:var(--red)}
+.wvi{color:var(--text2)}
+
+/* DASHBOARD */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px;margin-bottom:13px}
+.sbox{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.snum{font-family:'DM Mono',monospace;font-size:calc(23px * var(--fsr));font-weight:500;color:var(--ac)}
+.slbl{font-size:calc(11px * var(--fsr));color:var(--text2);margin-top:3px}
+.hmap{display:flex;gap:2px;flex-wrap:wrap;margin-top:6px}
+.day30-chart{display:flex;align-items:flex-end;gap:2px;height:64px;margin-top:8px}
+.day30-bar-wrap{flex:1;display:flex;align-items:flex-end;height:100%;cursor:default}
+.day30-bar{width:100%;background:linear-gradient(180deg,var(--ac),#7FFFED);border-radius:2px 2px 0 0;min-height:2px;transition:height .3s}
+.day30-labels{display:flex;justify-content:space-between;font-size:calc(10px * var(--fsr));color:var(--text3);margin-top:6px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:calc(12px * var(--fsr))}
+.bar-label{width:130px;flex-shrink:0;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--ac),#7FFFED);border-radius:4px;transition:width .4s}
+.bar-val{width:28px;text-align:right;color:var(--text);font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
+.hc{width:11px;height:11px;border-radius:2px;background:var(--bg4)}
+.hc[data-v="1"]{background:rgba(0,201,167,.2)}
+.hc[data-v="2"]{background:rgba(0,201,167,.42)}
+.hc[data-v="3"]{background:rgba(0,201,167,.65)}
+.hc[data-v="4"]{background:var(--ac)}
+.spi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;margin-bottom:5px}
+.sph{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.spn{font-weight:600;font-size:calc(12px * var(--fsr))}
+.sps{font-size:calc(10px * var(--fsr));padding:2px 7px;border-radius:20px}
+.sps.ns{background:rgba(255,107,107,.1);color:var(--red)}
+.sps.ip{background:rgba(255,179,71,.1);color:var(--yel)}
+.sps.cp{background:rgba(0,201,167,.1);color:var(--ac)}
+.spbar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.spfill{height:100%;background:var(--ac);border-radius:2px}
+.spft{display:flex;justify-content:space-between;margin-top:4px;font-size:calc(10px * var(--fsr));color:var(--text3)}
+
+/* HISTORY */
+.hitem{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.hmode{background:var(--bg4);padding:2px 8px;border-radius:20px;font-size:calc(10px * var(--fsr));font-weight:700;color:var(--ac);white-space:nowrap}
+.hinf{flex:1}
+.httl{font-size:calc(12px * var(--fsr));font-weight:600}
+.hsub{font-size:calc(10px * var(--fsr));color:var(--text3);margin-top:2px}
+.hscr{font-family:'DM Mono',monospace;font-size:calc(14px * var(--fsr));font-weight:500}
+.hscr.good{color:var(--ac)}
+.hscr.bad{color:var(--red)}
+
+/* MODAL/SETTINGS */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;backdrop-filter:blur(4px)}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;width:95%;max-width:480px;max-height:88vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.mhdr{padding:15px 18px 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.mttl{font-family:'Bricolage Grotesque',sans-serif;font-size:calc(16px * var(--fsr));font-weight:700}
+.mbdy{padding:0 18px 18px}
+.srow2{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:calc(13px * var(--fsr))}
+.srow2:last-child{border-bottom:none}
+.tog{width:32px;height:17px;border-radius:9px;border:none;cursor:pointer;position:relative;transition:background .18s;flex-shrink:0}
+.tog.on{background:var(--ac)}
+.tog.off{background:var(--border)}
+.tog::after{content:'';width:13px;height:13px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .18s}
+.tog.on::after{left:17px}
+.tog.off::after{left:2px}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.btn-p{padding:8px 16px;background:var(--ac);color:#0D1B2A;border:none;border-radius:var(--rs);cursor:pointer;font-size:calc(13px * var(--fsr));font-weight:600;font-family:'Inter',sans-serif;transition:opacity .13s}
+.btn-p:hover{opacity:.88}
+.btn-s{padding:7px 13px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:calc(12px * var(--fsr));font-weight:500;font-family:'Inter',sans-serif;transition:all .13s}
+.btn-s:hover{background:var(--bg4);color:var(--text)}
+.empty{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty .big{font-size:calc(40px * var(--fsr));margin-bottom:10px}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 15px;font-size:calc(12px * var(--fsr));font-weight:500;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(60px);opacity:0;transition:all .23s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--ac);color:var(--ac)}
+.toast.err{border-color:var(--red);color:var(--red)}
+.fi{width:100%;padding:8px 11px;border-radius:var(--rs);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:calc(13px * var(--fsr));font-family:'Inter',sans-serif;outline:none}
+.fi:focus{border-color:var(--ac)}
+
+/* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVE — full redesign for phones
+   ═══════════════════════════════════════════════ */
+@media(max-width:720px){
+  /* Hide desktop sidebar entirely on mobile */
+  .sb{display:none !important}
+  /* Full width main */
+  .app{flex-direction:column;height:auto;overflow:visible}
+  .main{height:auto;overflow:visible;padding:12px 14px 80px}
+  /* Header compact */
+  header{padding:0 12px;gap:8px;height:48px}
+  .logo{font-size:calc(16px * var(--fsr))}
+  .streak{padding:3px 9px;font-size:calc(11px * var(--fsr))}
+  /* Gộp về DUY NHẤT 1 control chỉnh cỡ chữ nằm trên thanh header — không dùng nút nổi riêng nữa.
+     Trên di động chỉ hiện chữ A−/A+ (ẩn số %) để tiết kiệm diện tích header như yêu cầu. */
+  .fs-ctrl{padding:0}
+  .fs-btn{padding:5px 8px;font-size:calc(13px * var(--fsr))}
+  .fs-lbl{display:none}
+  /* Bottom nav bar */
+  .bottom-nav{display:flex !important}
+  /* htabs grid — 2 cols on mobile */
+  .htabs{grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:12px}
+  .htab{padding:9px 10px}
+  .htab-name{font-size:calc(11px * var(--fsr))}
+  .htab-cnt,.htab-pct{font-size:calc(10px * var(--fsr))}
+  /* Branch grid 2 cols */
+  .bgrid{grid-template-columns:repeat(2,1fr);gap:7px}
+  .bcard{padding:8px 10px}
+  /* Quiz options — 1 col on narrow, 2 col on wider mobile */
+  .ogrid{grid-template-columns:1fr;max-width:100%;gap:7px}
+  /* Matching grid — vẫn giữ 2 cột trên di động (English bên trái, nghĩa bên phải), chỉ giảm khoảng cách cho vừa màn hình hẹp */
+  .mgrid{grid-template-columns:1fr 1fr;gap:6px}
+  /* Word study grid 1 col */
+  .wsgrid{grid-template-columns:1fr}
+  /* qcard padding reduce */
+  .qcard{padding:16px 14px}
+  /* (đã bỏ override .q-word riêng cho mobile — cỡ chữ giờ do #practice-wrap .q-word 2.28em × --fsr quyết định, thống nhất mọi kích thước màn hình) */
+  /* Ring smaller on mobile */
+  .ring-wrap{width:38px;height:38px}
+  .ring-wrap svg{width:38px;height:38px}
+  .rpct{font-size:calc(9px * var(--fsr))}
+  /* leaf-acts stack */
+  .leaf-acts{flex-direction:column;gap:8px}
+  .la{justify-content:center}
+  /* practice-wrap padding */
+  #practice-wrap{padding-bottom:70px}
+  /* branch summary stack */
+  .branch-summary{flex-direction:column;align-items:flex-start;gap:6px}
+  /* modal full width */
+  .modal{width:98%;max-width:none;border-radius:var(--r) var(--r) 0 0;bottom:0;top:auto;transform:translateX(-50%)}
+}
+/* Bottom navigation bar (hidden on desktop) */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:58px;
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  z-index:300;
+  flex-direction:row;
+  align-items:stretch;
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;color:var(--text3);font-size:calc(10px * var(--fsr));font-weight:500;
+  transition:color .14s;border:none;background:none;padding:6px 4px;
+  -webkit-tap-highlight-color:transparent;
+}
+.bn-item.active{color:var(--ac)}
+.bn-item .bnico{font-size:calc(20px * var(--fsr));line-height:1}
+/* Safe area for notched phones */
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  .bottom-nav{padding-bottom:env(safe-area-inset-bottom);height:calc(58px + env(safe-area-inset-bottom))}
+  @media(max-width:720px){.main{padding-bottom:calc(80px + env(safe-area-inset-bottom))}}
+}
+/* ── iOS Safari: div click fix ──────────────────────
+   iOS Safari does NOT fire click on non-button divs
+   unless they have cursor:pointer AND touch-action:manipulation.
+   This fixes bcard, htab, mitem, etc. not responding on iPhone. */
+.bcard,.htab,.ni,.mr,.mitem,.bn-item,
+.rnd-banner-btn,.hitem,.spi,.la,
+.bci,.bc-item,.leaf-acts button{
+  cursor:pointer;
+  -webkit-tap-highlight-color:rgba(0,201,167,.08);
+  touch-action:manipulation;
+}
+/* Remove 300ms tap delay globally on iOS */
+*{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+button,a,.bcard,.htab{touch-action:manipulation}
+</style>
+</head>
+<body>
+<header>
+  <button class="hbtn" id="sbtg" onclick="$('sb').classList.toggle('open')" style="display:none">☰</button>
+  <div class="logo">Word<span>Wise</span></div>
+  <div class="hright">
+    <div class="streak">🔥 <span id="sc">0</span></div>
+    <div class="fs-ctrl">
+      <button class="fs-btn" onclick="chgFS(-1)">A−</button>
+      <span class="fs-lbl" id="fslbl">14</span>
+      <button class="fs-btn" onclick="chgFS(1)">A+</button>
+    </div>
+    <button class="hbtn" onclick="toggleTheme()" id="tbtn">🌙</button>
+    <button class="hbtn" onclick="exportBackup()" title="Xuất backup">⬇️</button>
+    <button class="hbtn" onclick="openSettings()">⚙️</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sb" id="sb">
+    <div class="sb-sec">
+      <div class="stl">Điều hướng</div>
+      <div class="ni active" onclick="nav('home')" id="nv-home"><span class="ic">🏠</span>Trang chủ</div>
+      <div class="ni" onclick="nav('dash')" id="nv-dash"><span class="ic">📊</span>Dashboard</div>
+      <div class="ni" onclick="nav('hist')" id="nv-hist"><span class="ic">🕘</span>Lịch sử</div>
+      <div class="ni" onclick="$('xi').click()"><span class="ic">📊</span>Import Excel</div>
+      <div class="ni" onclick="updateFromGitHub()" id="nv-ghupdate"><span class="ic">🔄</span>Cập nhật từ GitHub</div>
+      <input type="file" id="xi" accept=".xlsx,.xls" style="display:none" onchange="importXL(this)">
+      <input type="file" id="ji" accept=".json" style="display:none" onchange="importBackup(this)">
+    </div>
+    <div class="sb-sec">
+      <div class="stl">Chế độ luyện tập</div>
+      <div class="mr sel" id="mr-quiz" onclick="setMode('quiz')"><div class="rdot"></div><div class="ml">❓ Trắc nghiệm</div><div class="md">4 đáp án</div></div>
+      <div class="mr" id="mr-type" onclick="setMode('type')"><div class="rdot"></div><div class="ml">⌨️ Typing</div><div class="md">Gõ nghĩa</div></div>
+      <div class="mr" id="mr-match" onclick="setMode('match')"><div class="rdot"></div><div class="ml">🔗 Ghép cặp</div><div class="md">Nối EN↔VI</div></div>
+      <div class="mr" id="mr-mock" onclick="setMode('mock')"><div class="rdot"></div><div class="ml">⏱ Thi thử</div><div class="md">Đếm ngược</div></div>
+    </div>
+  </aside>
+  <main class="main" id="mc"></main>
+</div>
+
+<div class="ov" id="ov" style="display:none" onclick="if(event.target===this)closeMod()"></div>
+<div class="modal" id="mb" style="display:none"></div>
+<div class="toast" id="toast"></div>
+<!-- Bottom navigation bar (mobile only) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-item active" id="bn-home" onclick="bnNav('home')">
+    <span class="bnico">🏠</span><span>Trang chủ</span>
+  </button>
+  <button class="bn-item" id="bn-mode" onclick="openMobileMode()">
+    <span class="bnico">🎮</span><span>Chế độ</span>
+  </button>
+  <button class="bn-item" id="bn-dash" onclick="bnNav('dash')">
+    <span class="bnico">📊</span><span>Dashboard</span>
+  </button>
+  <button class="bn-item" id="bn-hist" onclick="bnNav('hist')">
+    <span class="bnico">🕘</span><span>Lịch sử</span>
+  </button>
+  <button class="bn-item" id="bn-ghupdate" onclick="updateFromGitHub()">
+    <span class="bnico">🔄</span><span>Cập nhật</span>
+  </button>
+</nav>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATIC DATA FROM EXCEL SHEETS 2 & 3
+// ══════════════════════════════════════════════════════════════
+const TOPICS_DATA = [
+  {name:"Daily Life & Routines",group:"Cuộc Sống"},{name:"Food & Cooking",group:"Cuộc Sống"},
+  {name:"Health & Medicine",group:"Sức Khỏe"},{name:"Sports & Fitness",group:"Sức Khỏe"},
+  {name:"Emotions & Psychology",group:"Con Người"},{name:"Family & Relationships",group:"Con Người"},
+  {name:"Education & Learning",group:"Xã Hội"},{name:"Work & Career",group:"Xã Hội"},
+  {name:"Business & Finance",group:"Kinh Tế"},{name:"Shopping & Money",group:"Kinh Tế"},
+  {name:"Science & Technology",group:"Khoa Học"},{name:"Computers & Internet",group:"Khoa Học"},
+  {name:"Nature & Environment",group:"Thiên Nhiên"},{name:"Animals & Plants",group:"Thiên Nhiên"},
+  {name:"Travel & Transport",group:"Thế Giới"},{name:"Countries & Culture",group:"Thế Giới"},
+  {name:"Language & Communication",group:"Ngôn Ngữ"},
+  {name:"Art & Music",group:"Nghệ Thuật"},{name:"Literature & Media",group:"Nghệ Thuật"},
+  {name:"History & Politics",group:"Xã Hội"},{name:"Law & Justice",group:"Xã Hội"},
+  {name:"Religion & Philosophy",group:"Tư Tưởng"},
+  {name:"Space & Universe",group:"Khoa Học"},{name:"Mathematics & Logic",group:"Khoa Học"},
+  {name:"Architecture & Design",group:"Sáng Tạo"},
+  {name:"Fashion & Appearance",group:"Cuộc Sống"},
+  {name:"Personality & Character",group:"Con Người"},
+  {name:"Time & Change",group:"Khái Niệm"},{name:"Quantity & Measurement",group:"Khái Niệm"},
+  {name:"Cause & Effect",group:"Khái Niệm"}
+];
+const ROOTS_DATA = [
+  {root:"ambi-",origin:"Latin",meaning:"cả hai phía",examples:"ambiguous, ambivalent, ambidextrous"},
+  {root:"bene-",origin:"Latin",meaning:"tốt, lợi",examples:"benefit, beneficial, benevolent, beneficiary"},
+  {root:"circum-",origin:"Latin",meaning:"xung quanh",examples:"circumstance, circumference, circumvent"},
+  {root:"contra-",origin:"Latin",meaning:"chống lại",examples:"contradict, contrary, contrast, controversy"},
+  {root:"de-",origin:"Latin",meaning:"xuống, bỏ đi",examples:"decline, decrease, deduce, degrade, delay"},
+  {root:"ex-",origin:"Latin",meaning:"ra ngoài, trước",examples:"export, expand, expose, exclude, extract"},
+  {root:"inter-",origin:"Latin",meaning:"giữa, lẫn nhau",examples:"interact, international, interpret, intervene"},
+  {root:"mal-",origin:"Latin",meaning:"xấu, sai",examples:"malfunction, malicious, malnourished, maltreat"},
+  {root:"micro-",origin:"Greek",meaning:"nhỏ",examples:"microphone, microscope, microwave, microchip"},
+  {root:"mono-",origin:"Greek",meaning:"một",examples:"monotone, monologue, monopoly, monarchy"},
+  {root:"port-",origin:"Latin",meaning:"mang, chuyển",examples:"transport, import, export, portable, portfolio"},
+  {root:"pre-",origin:"Latin",meaning:"trước",examples:"predict, prepare, prevent, preview, prefix"},
+  {root:"re-",origin:"Latin",meaning:"lại, trở lại",examples:"return, review, recycle, renew, rebuild"},
+  {root:"sub-",origin:"Latin",meaning:"dưới",examples:"submarine, subtract, substitute, subscribe"},
+  {root:"super-",origin:"Latin",meaning:"trên, vượt trội",examples:"supermarket, superior, supervise, supernatural"},
+  {root:"tele-",origin:"Greek",meaning:"xa",examples:"telephone, telescope, television, telepathy"},
+  {root:"trans-",origin:"Latin",meaning:"qua, xuyên",examples:"transport, transform, transfer, translate"},
+  {root:"uni-",origin:"Latin",meaning:"một, thống nhất",examples:"unique, uniform, university, unity, unify"},
+  {root:"-tion/-sion",origin:"Latin",meaning:"biến động từ → danh từ",examples:"information, decision, action, direction"},
+  {root:"-ment",origin:"Latin",meaning:"biến động từ → danh từ",examples:"government, management, achievement, movement"}
+];
+const GRADE_ORDER = ['Lớp 6','Lớp 7','Lớp 8','Lớp 9','Lớp 10','Lớp 11','Lớp 12'];
+const GRADE_ICONS = {
+  'Lớp 6':'6️⃣','Lớp 7':'7️⃣','Lớp 8':'8️⃣','Lớp 9':'9️⃣',
+  'Lớp 10':'🔟','Lớp 11':'1️⃣1️⃣','Lớp 12':'1️⃣2️⃣'
+};
+const TOPIC_ICONS = {
+  'Daily Life':'🏠','Food':'🍜','Health':'🏥','Sports':'⚽','Emotion':'❤️','Family':'👨‍👩‍👧',
+  'Education':'📖','Work':'💼','Business':'📈','Shopping':'🛒','Science':'🔬',
+  'Computer':'💻','Nature':'🌿','Animal':'🐾','Travel':'✈️','Countries':'🌍',
+  'Language':'💬','Art':'🎨','Literature':'📚','History':'📜','Law':'⚖️',
+  'Religion':'🙏','Space':'🚀','Math':'🔢','Architecture':'🏛','Fashion':'👗',
+  'Personality':'🧠','Time':'⏰','Quantity':'📏','Cause':'🔄'
+};
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+let DB = {
+  words:[], progress:{}, modeProgress:{}, rndQueues:{}, history:[], streak:{count:0,last:''}, act:{}, dailyLog:{},
+  settings:{theme:'dark',fs:14,mode:'quiz',showPhonetic:true,showPos:true,showColloc:true,showExample:true,showLevel:true,autoSpeak:true,voiceURI:null}
+};
+let G = {mode:null,words:[],queue:[],idx:0,score:0,wrong:[],start:null,ti:null,tsec:0,ml:null,mbatch:[],mmatched:0};
+// Ghi nhớ hàm khởi tạo của phiên "học ngẫu nhiên" hiện tại (nếu có) — để màn kết quả có thể hiện nút
+// "▶️ Học tiếp bộ mới" và gọi lại ĐÚNG hàm đó, tự động lấy batch tiếp theo không trùng từ đã học
+// (nhờ cơ chế hàng đợi chống lặp DB.rndQueues có sẵn) cho đến khi hết 1 vòng toàn bộ từ.
+// Bị xoá (null) mỗi khi người dùng chọn nhóm/unit/chủ đề CỤ THỂ theo cách thủ công.
+let lastRandomStarter=null;
+let curTab='grade', curBranch=null, curLeaf=null;
+
+function save(){
+  try{
+    localStorage.setItem('ww5',JSON.stringify(DB));
+  }catch(e){
+    // Hết dung lượng lưu trữ (QuotaExceededError) hoặc lỗi khác — báo cho người dùng
+    // thay vì âm thầm mất dữ liệu (tiến độ học, sao, v.v. vừa thay đổi sẽ không được lưu).
+    console.error('save() failed:',e);
+    toast('⚠️ Không lưu được dữ liệu — bộ nhớ thiết bị có thể đã đầy! Hãy xuất sao lưu và xoá bớt dữ liệu cũ.','err');
+  }
+}
+function load(){
+  const d=localStorage.getItem('ww5');
+  if(d){try{const p=JSON.parse(d);DB={...DB,...p};DB.settings={...DB.settings,...(p.settings||{})};}catch(e){}}
+  // Chế độ Flashcard đã bị gỡ bỏ khỏi app — nếu người dùng cũ còn lưu mode='flash', chuyển về Trắc nghiệm.
+  if(DB.settings.mode==='flash')DB.settings.mode='quiz';
+  upStreak();
+}
+function ds(d){return d.toISOString().split('T')[0];}
+function upStreak(){
+  $('sc').textContent=DB.streak.count;
+  const t=ds(new Date());if(DB.streak.last===t)return;
+  const y=ds(new Date(Date.now()-86400000));
+  DB.streak.count=DB.streak.last===y?DB.streak.count+1:1;
+  DB.streak.last=t;save();$('sc').textContent=DB.streak.count;
+}
+function toggleTheme(){DB.settings.theme=DB.settings.theme==='dark'?'light':'dark';applyT();save();}
+function applyT(){document.documentElement.setAttribute('data-theme',DB.settings.theme);$('tbtn').textContent=DB.settings.theme==='dark'?'🌙':'☀️';}
+function chgFS(d){const cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||14;const nv=Math.min(22,Math.max(11,cur+d));document.documentElement.style.setProperty('--fs',nv+'px');document.documentElement.style.setProperty('--fsr',(nv/14).toFixed(3));DB.settings.fs=nv;save();const l=$('fslbl');if(l)l.textContent=nv;}
+function applyFS(){const nv=DB.settings.fs||14;document.documentElement.style.setProperty('--fs',nv+'px');document.documentElement.style.setProperty('--fsr',(nv/14).toFixed(3));const l=$('fslbl');if(l)l.textContent=nv;}
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+function fmtT(s){const m=Math.floor(s/60);return m+':'+(s%60<10?'0':'')+(s%60);}
+function toast(msg,tp=''){const t=$('toast');t.textContent=msg;t.className='toast show'+(tp?' '+tp:'');setTimeout(()=>t.classList.remove('show'),2400);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+// Stable ID cho 1 từ vựng, sinh từ NỘI DUNG (word+grade+unit+topic+root) thay vì ngẫu nhiên.
+// Nhờ vậy khi import lại cùng 1 bộ từ, ID không đổi → tiến độ học (progress/sao) vẫn khớp được với từ cũ.
+function wordKey(w){
+  return [w.word,w.grade,w.unit,w.topic,w.specialGroup,w.root].map(x=>String(x||'').trim().toLowerCase()).join('|');
+}
+function stableId(w){
+  const s=wordKey(w);
+  let h=5381;
+  for(let i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))|0;}
+  return 'w'+(h>>>0).toString(36);
+}
+// Escape dữ liệu do người dùng import (Excel) trước khi chèn vào innerHTML,
+// tránh vỡ giao diện hoặc chèn mã HTML/script nếu file Excel chứa ký tự đặc biệt.
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Escape an toàn để chèn vào bên trong chuỗi JS (đặt trong dấu ' ' của onclick="...('...')")
+function escJs(s){
+  return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n');
+}
+function dlog(){const k=ds(new Date());DB.act[k]=(DB.act[k]||0)+1;save();}
+
+// ── iOS Safari tap fix ────────────────────────────────────────────────────
+// iOS Safari doesn't reliably fire 'click' on divs rendered via innerHTML.
+// addTap() listens to touchend (scroll-aware) + click for desktop fallback.
+// Replace ALL el.addEventListener('click', fn) in dynamic renders with addTap(el, fn).
+function addTap(el,fn){
+  if(!el)return;
+  const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+  if(isTouch){
+    // iOS Safari: use touchend to avoid 300ms delay and click-not-firing bug
+    let startY=0,moved=false;
+    el.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;moved=false;},{passive:true});
+    el.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-startY)>8)moved=true;},{passive:true});
+    el.addEventListener('touchend',e=>{
+      if(moved)return;
+      e.preventDefault(); // prevent ghost click on iOS
+      fn(e);
+    },{passive:false});
+  }else{
+    // Desktop: just use click
+    el.addEventListener('click',fn);
+  }
+}
+
+// ── SPEAK ──────────────────────────────────────────────────────────────────
+// speakToken tăng lên mỗi lần dừng/hủy phát âm — dùng để "vô hiệu hóa" mọi chuỗi
+// đọc (speakSequence) đang dang dở, tránh trường hợp hủy audio cũ (qua onerror)
+// lại vô tình kích hoạt đọc tiếp phần còn lại của từ cũ, chồng lên từ mới.
+let speakToken=0;
+function stopAutoSpeak(){
+  speakToken++;
+  if(window.speechSynthesis)speechSynthesis.cancel();
+}
+// ── Chọn đúng giọng đọc tiếng Anh (fix lỗi iOS Safari) ──────────────────────
+// Trên iOS, chỉ đặt utterance.lang='en-US' KHÔNG đủ — Safari thường vẫn dùng giọng
+// mặc định của hệ điều hành (vd: giọng tiếng Việt nếu máy đang để ngôn ngữ Việt).
+// Phải tìm đúng object SpeechSynthesisVoice tiếng Anh trong danh sách và gán thẳng
+// vào utterance.voice thì Safari mới đọc đúng kiểu tiếng Anh.
+let _voiceCache=null;
+function loadVoices(){
+  if(!window.speechSynthesis)return;
+  const list=speechSynthesis.getVoices();
+  if(list&&list.length)_voiceCache=list;
+}
+if(window.speechSynthesis){
+  loadVoices();
+  // Trên iOS/Safari, getVoices() thường trả về mảng rỗng ở lần gọi đầu — danh sách
+  // chỉ có sau khi trình duyệt load xong, báo qua sự kiện voiceschanged.
+  speechSynthesis.addEventListener('voiceschanged',loadVoices);
+}
+function pickVoice(lang){
+  if(!_voiceCache)loadVoices();
+  if(!_voiceCache||!_voiceCache.length)return null;
+  // Nếu người dùng đã tự chọn 1 giọng cụ thể trong Cài đặt → ưu tiên tuyệt đối, dùng đúng giọng đó
+  if(DB.settings.voiceURI){
+    const chosen=_voiceCache.find(v=>v.voiceURI===DB.settings.voiceURI);
+    if(chosen)return chosen;
+  }
+  const wantBase=(lang||'en-US').split('-')[0].toLowerCase();
+  const candidates=_voiceCache.filter(v=>v.lang&&v.lang.toLowerCase().startsWith(wantBase));
+  if(!candidates.length)return null;
+  // Chấm điểm chất lượng theo TÊN giọng — các hệ điều hành thường đặt tên giọng chất lượng cao
+  // (được tải thêm/"Enhanced"/"Premium"/"Neural") khác với giọng robot mặc định luôn có sẵn.
+  // Đây chỉ là suy đoán tương đối (không có API chính thức để hỏi "chất lượng"), nhưng giúp
+  // tránh được phần lớn trường hợp rơi vào giọng robot nếu máy có sẵn giọng tốt hơn.
+  const GOOD_HINTS=/enhanced|premium|neural|natural|siri/i;
+  const KNOWN_GOOD_NAMES=/samantha|ava|zoe|allison|susan|karen|moira|tessa|serena|daniel|alex|fred$/i;
+  const BAD_HINTS=/compact|eSpeak|robot|espeak/i;
+  const score=v=>{
+    let s=0;
+    if(v.lang.toLowerCase()===lang.toLowerCase())s+=10; // đúng chính xác vùng (en-US)
+    if(GOOD_HINTS.test(v.name))s+=8;
+    if(KNOWN_GOOD_NAMES.test(v.name))s+=4;
+    if(BAD_HINTS.test(v.name))s-=6;
+    if(v.default)s+=2; // giọng được hệ thống đặt làm mặc định thường là giọng chính, chất lượng ổn định
+    return s;
+  };
+  return candidates.sort((a,b)=>score(b)-score(a))[0];
+}
+// Trả về danh sách các giọng tiếng Anh có trên máy — dùng để hiển thị ô chọn giọng trong Cài đặt
+function getEnglishVoices(){
+  if(!_voiceCache)loadVoices();
+  return (_voiceCache||[]).filter(v=>v.lang&&v.lang.toLowerCase().startsWith('en'));
+}
+// Phát âm 1 đoạn text riêng lẻ (dùng cho các nút 🔊 bấm tay) — huỷ audio đang phát rồi đọc ngay đoạn này.
+function speak(txt,lang='en-US',rate=0.85){
+  if(!window.speechSynthesis||!txt)return;
+  stopAutoSpeak();
+  const u=new SpeechSynthesisUtterance(txt);u.lang=lang;u.rate=rate;
+  const v=pickVoice(lang);if(v)u.voice=v;
+  speechSynthesis.speak(u);
+}
+// Đọc lần lượt nhiều đoạn theo thứ tự, đọc xong đoạn này mới sang đoạn kế (dùng onend, không dùng setTimeout
+// đoán thời gian) — phát đúng 1 lượt duy nhất rồi dừng, KHÔNG lặp lại. Mỗi lượt gọi mang 1 "token" riêng;
+// nếu có lệnh dừng/phát mới xen vào giữa chừng, token cũ không còn khớp nữa nên chuỗi cũ tự dừng hẳn,
+// không bao giờ phát đè lên từ đang hiển thị hiện tại.
+function speakSequence(parts){
+  stopAutoSpeak();
+  const myToken=speakToken;
+  const queue=(parts||[]).filter(p=>p&&p.text);
+  if(!queue.length||!window.speechSynthesis)return;
+  let i=0;
+  const playNext=()=>{
+    if(myToken!==speakToken)return; // đã có lệnh dừng/chuyển từ khác xen vào — bỏ hẳn chuỗi cũ
+    if(i>=queue.length)return;
+    const p=queue[i++];
+    const u=new SpeechSynthesisUtterance(p.text);
+    u.lang=p.lang||'en-US';u.rate=p.rate||0.85;
+    const v=pickVoice(u.lang);if(v)u.voice=v;
+    u.onend=playNext;
+    u.onerror=()=>{}; // lỗi (kể cả do bị cancel) KHÔNG được phép tự đọc tiếp phần sau
+    speechSynthesis.speak(u);
+  };
+  playNext();
+}
+// Tự động đọc khi vừa chuyển sang 1 từ mới: từ vựng → cụm từ đi kèm → ví dụ 1 → ví dụ 2 (đọc 1 lượt rồi dừng).
+// fullSeq=false (dùng ở chế độ Thi thử có giới hạn giờ) → chỉ đọc mỗi từ vựng, không đọc cụm từ/ví dụ.
+function startAutoSpeak(w,fullSeq=true){
+  if(!DB.settings.autoSpeak||!w||!w.word)return;
+  const S=DB.settings;
+  const parts=[{text:w.word,lang:'en-US',rate:0.85}];
+  if(fullSeq){
+    if(S.showColloc&&w.collocations)parts.push({text:w.collocations,lang:'en-US',rate:0.8});
+    if(S.showExample&&w.ex1)parts.push({text:w.ex1,lang:'en-US',rate:0.8});
+    if(S.showExample&&w.ex2)parts.push({text:w.ex2,lang:'en-US',rate:0.8});
+  }
+  speakSequence(parts);
+}
+
+// ── MODE ───────────────────────────────────────────────────────────────────
+function setMode(m){
+  DB.settings.mode=m;save();
+  document.querySelectorAll('.mr').forEach(el=>el.classList.remove('sel'));
+  $('mr-'+m)?.classList.add('sel');
+  const n={quiz:'Trắc nghiệm',type:'Typing',match:'Ghép cặp',mock:'Thi thử'};
+  // Nếu đang có 1 phiên luyện tập hoạt động (đã chọn nhóm từ, đang ở màn hình luyện tập),
+  // đổi chế độ sẽ khởi động lại NGAY với đúng bộ từ đang học, thay vì chỉ lưu cài đặt im lìm.
+  if(curLeaf?.words?.length && $('practice-wrap')){
+    toast('🔄 Đã chuyển sang: '+(n[m]||m),'ok');
+    startPractice();
+  }else{
+    toast('Chế độ: '+(n[m]||m),'ok');
+  }
+}
+function applyMode(){document.querySelectorAll('.mr').forEach(el=>el.classList.remove('sel'));$('mr-'+DB.settings.mode)?.classList.add('sel');}
+
+// ── PROGRESS (per-mode) ────────────────────────────────────────────────────
+// modeProgress structure: { quiz:{wordId:{seen,correct,wrong,consec}}, type:{...}, ... }
+const MODES=['quiz','type','match','mock'];
+const modeLabels={quiz:'❓ Trắc nghiệm',type:'⌨️ Typing',match:'🔗 Ghép cặp',mock:'⏱ Thi thử'};
+
+function getMProg(mode,id){
+  if(!DB.modeProgress)DB.modeProgress={};
+  if(!DB.modeProgress[mode])DB.modeProgress[mode]={};
+  return DB.modeProgress[mode][id]||{seen:0,correct:0,wrong:0,consec:0};
+}
+function setMProg(mode,id,p){
+  if(!DB.modeProgress)DB.modeProgress={};
+  if(!DB.modeProgress[mode])DB.modeProgress[mode]={};
+  DB.modeProgress[mode][id]=p;
+}
+
+// Legacy getProg for stars (stars shared across all modes — no need to separate)
+function getProg(id){return DB.progress[id]||{stars:1};}
+
+function markWord(id,ok){
+  const mode=G.mode||DB.settings.mode;
+  const p=getMProg(mode,id);
+  p.seen++;
+  if(ok){p.correct++;p.consec=(p.consec||0)+1;}
+  else{p.wrong=(p.wrong||0)+1;p.consec=0;}
+  setMProg(mode,id,p);
+  if(ok)logDaily(id);
+  save();dlog();
+}
+
+function setStar(id,n,btn){
+  const p=getProg(id);p.stars=n;
+  DB.progress[id]=p;save();
+  btn.parentElement.querySelectorAll('.sbtn').forEach((s,i)=>s.classList.toggle('lit',i<n));
+}
+
+// grpPct(words, mode?) — if mode given use that mode's stats, else use current selected mode
+function grpPct(words,mode){
+  if(!words.length)return 0;
+  const m=mode||DB.settings.mode;
+  if(!DB.modeProgress||!DB.modeProgress[m])return 0;
+  const mp=DB.modeProgress[m];
+  return Math.round(words.filter(w=>(mp[w.id]||{}).correct>0).length/words.length*100);
+}
+// Thống kê Đã học/Đang học/Chưa học cho 1 tập từ, dùng cho panel chi tiết trang chủ
+function groupStats(words,mode){
+  const m=mode||DB.settings.mode;
+  const mp=(DB.modeProgress&&DB.modeProgress[m])||{};
+  let learned=0,learning=0;
+  words.forEach(w=>{
+    const p=mp[w.id];
+    if(p&&p.correct>0)learned++;
+    else if(p&&p.seen>0)learning++;
+  });
+  const total=words.length;
+  return{learned,learning,notStarted:total-learned-learning,total,pct:total?Math.round(learned/total*100):0};
+}
+function statsRowHTML(words){
+  const s=groupStats(words);
+  return`<div class="gstat-row">
+    <div class="gstat-mini"><div class="gstat-ico">✅</div><div class="gstat-val">${s.learned}</div><div class="gstat-lbl">Đã học</div></div>
+    <div class="gstat-mini"><div class="gstat-ico">📘</div><div class="gstat-val">${s.learning}</div><div class="gstat-lbl">Đang học</div></div>
+    <div class="gstat-mini"><div class="gstat-ico">📄</div><div class="gstat-val">${s.notStarted}</div><div class="gstat-lbl">Chưa học</div></div>
+    <div class="gstat-mini"><div class="gstat-ico">📈</div><div class="gstat-val">${s.pct}%</div><div class="gstat-lbl">Tiến độ</div></div>
+  </div>`;
+}
+// Trạng thái "đã bấm Xem thêm" cho từng danh sách con (key riêng theo tab/branch) — reset khi đổi tab
+let _expandState={};
+// Vẽ 1 lưới thẻ ngang có thể thu gọn (mặc định hiện tối đa `limit` thẻ + nút "Xem thêm").
+// cardBuilder(item,i) trả về HTML (phải có data-idx="i" trên .bcard); onItemClick(item,i) xử lý khi bấm thẻ.
+function renderExpandGrid(containerId,items,expandKey,cardBuilder,onItemClick,limit=12){
+  const el=$(containerId);if(!el)return;
+  const expanded=!!_expandState[expandKey];
+  const shown=expanded?items:items.slice(0,limit);
+  el.innerHTML=`<div class="bgrid">${shown.map((it,i)=>cardBuilder(it,i)).join('')}</div>`+
+    (items.length>limit?`<div class="expand-toggle"><button id="exp-${expandKey}">${expanded?'Thu gọn ▴':`Xem thêm (${items.length-limit}) ▾`}</button></div>`:'');
+  el.querySelectorAll('.bcard[data-idx]').forEach(card=>{
+    const i=+card.dataset.idx;
+    addTap(card,()=>onItemClick(shown[i],i));
+  });
+  const btn=$('exp-'+expandKey);
+  if(btn)addTap(btn,()=>{_expandState[expandKey]=!expanded;renderExpandGrid(containerId,items,expandKey,cardBuilder,onItemClick,limit);});
+}
+
+// Stars for wib() — still shared
+function getStars(id){return(getProg(id).stars)||1;}
+
+// Records a correctly-answered word against today's date
+function logDaily(id){
+  const k=ds(new Date());
+  if(!DB.dailyLog[k])DB.dailyLog[k]=[];
+  if(!DB.dailyLog[k].includes(id))DB.dailyLog[k].push(id);
+}
+
+// ── RING SVG ───────────────────────────────────────────────────────────────
+function ring(pct,size=44){
+  const R=size*0.375;const C=2*Math.PI*R;const off=C-(pct/100)*C;
+  const sw=(size*0.08).toFixed(2);
+  const fs=Math.max(8,Math.round(size*0.227));
+  return`<div class="ring-wrap" style="width:${size}px;height:${size}px"><svg viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px"><circle class="rb" cx="${size/2}" cy="${size/2}" r="${R}" style="stroke-width:${sw}"/><circle class="rf" cx="${size/2}" cy="${size/2}" r="${R}" style="stroke-width:${sw}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/></svg><div class="rpct" style="font-size:calc(${fs}px * var(--fsr))">${pct}%</div></div>`;
+}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function nav(v){
+  stopAutoSpeak();clearInterval(G.ti);
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
+  $('nv-'+v)?.classList.add('active');
+  // sync mobile bottom nav
+  document.querySelectorAll('.bn-item').forEach(e=>e.classList.remove('active'));
+  $('bn-'+v)?.classList.add('active');
+  if(v==='home')rHome();else if(v==='dash')rDash();else if(v==='hist')rHist();
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION HISTORY (real Back button)
+// Each entry is a function that re-renders that exact screen.
+// pushView() is called by every screen-transition; goBack() pops
+// the stack and replays the previous one.
+// ══════════════════════════════════════════════════════════════
+let NAVSTACK=[];
+function pushView(fn){NAVSTACK.push(fn);}
+function goBack(){
+  
+  if(NAVSTACK.length<=1){nav('home');return;}
+  NAVSTACK.pop();
+  const prev=NAVSTACK.pop();
+  if(prev)prev();
+}
+function backBtn(){
+  return NAVSTACK.length>1?`<button class="btn-s" id="btn-back" style="margin-bottom:12px">← Quay lại</button>`:'';
+}
+function wireBack(){addTap($('btn-back'),goBack);}
+
+// ══════════════════════════════════════════════════════════════
+// HOME — TABS & BRANCHES
+// ══════════════════════════════════════════════════════════════
+const TAB_DEFS=[
+  {id:'grade',label:'Phổ thông'},
+  {id:'A1A2',label:'A1–A2'},
+  {id:'B1B2',label:'B1–B2'},
+  {id:'C1C2',label:'C1–C2'},
+  {id:'roots',label:'Gốc từ'},
+];
+function tabWords(tabId){
+  if(tabId==='grade')return DB.words.filter(w=>w.grade);
+  if(tabId==='A1A2')return DB.words.filter(w=>w.level==='A1'||w.level==='A2');
+  if(tabId==='B1B2')return DB.words.filter(w=>w.level==='B1'||w.level==='B2');
+  if(tabId==='C1C2')return DB.words.filter(w=>w.level==='C1'||w.level==='C2');
+  if(tabId==='roots'){const all=new Set();ROOTS_DATA.forEach(r=>rootWords(r).forEach(w=>all.add(w.id)));return DB.words.filter(w=>all.has(w.id));}
+  return [];
+}
+function rHome(){
+  curBranch=null;curLeaf=null;NAVSTACK=[];
+  pushView(rHome);
+  const area0=$('mc');
+
+  if(!DB.words.length){
+    // Lần đầu mở app (chưa có từ vựng): TỰ ĐỘNG tải bộ từ vựng từ GitHub, không cần bấm gì.
+    // Chỉ hiện màn hình hướng dẫn nhập tay bên dưới nếu lần tự động này thất bại (vd: không có mạng).
+    if(!window._bootstrapTried){
+      window._bootstrapTried=true;
+      area0.innerHTML=`
+      <div style="max-width:420px;margin:80px auto 0;text-align:center">
+        <div style="font-size:44px;margin-bottom:14px">📚</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">Đang tải bộ từ vựng...</div>
+        <div style="font-size:13px;color:var(--text2)">Lấy dữ liệu mới nhất từ GitHub, chỉ mất vài giây</div>
+      </div>`;
+      fetch(GITHUB_XLSX_URL).then(res=>{
+        if(!res.ok)throw new Error('fetch failed');
+        return res.arrayBuffer();
+      }).then(buf=>{
+        const words=parseExcelBuffer(buf);
+        if(!words.length)throw new Error('empty');
+        DB.words=words;save();
+        toast(`✅ Đã tải ${words.length} từ vựng!`,'ok');
+        rHome();
+      }).catch(()=>{ rHome(); }); // thất bại → rHome() gọi lại, lần này _bootstrapTried đã true nên rơi xuống màn hình hướng dẫn nhập tay bên dưới
+      return;
+    }
+    area0.innerHTML=`
+    <div style="max-width:500px;margin:0 auto;padding:10px 0">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:52px;margin-bottom:10px">📚</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:24px;font-weight:700;margin-bottom:6px">Chào mừng đến WordWise!</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7">Không tự tải được bộ từ vựng — có thể do chưa có mạng. Kiểm tra kết nối rồi thử lại, hoặc nhập tay bên dưới.</div>
+      </div>
+      <button class="la practice" style="width:100%;justify-content:center;font-size:15px;padding:14px;margin-bottom:10px" onclick="window._bootstrapTried=false;nav('home')">🔄 Thử tải lại từ GitHub</button>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ac)">📋 Hoặc nhập tay từ file Excel</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--ac);color:#0D1B2A;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
+            <div><div style="font-size:13px;font-weight:600">Tải file từ vựng Excel</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Lưu vào điện thoại hoặc Google Drive</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--ac);color:#0D1B2A;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div>
+            <div><div style="font-size:13px;font-weight:600">Bấm nút Import bên dưới</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Chọn file Excel vừa tải về · App sẽ tự đọc và lưu lại</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="la practice" style="width:100%;justify-content:center;font-size:15px;padding:14px;margin-bottom:10px" onclick="$('xi').click()">📊 Import file Excel từ vựng</button>
+      <div style="text-align:center;font-size:12px;color:var(--text3)">Đã có bản backup? <span style="color:var(--ac);cursor:pointer;text-decoration:underline" onclick="$('ji').click()">Khôi phục từ file backup (.json)</span></div>
+      <input type="file" id="ji" accept=".json" style="display:none" onchange="importBackup(this)">
+    </div>`;
+    return;
+  }
+
+  const n=DB.words.length;
+  area0.innerHTML=`
+  <div class="vgroup-card">
+    <div class="vgroup-head">
+      <div class="vgroup-title">Nhóm từ vựng</div>
+      <div class="pill-row">
+        <div class="pill-rnd grp" id="rnd-g-group">🎯 Ôn 1 bộ ngẫu nhiên</div>
+        <div class="pill-rnd mix" id="rnd-g-mix">🎲 20 từ hỗn hợp</div>
+      </div>
+    </div>
+    <div class="htabs" id="htabs"></div>
+  </div>
+  <div id="barea"></div>`;
+
+  renderHomeTabs();
+  renderBranches();
+  addTap($('rnd-g-group'),startRandomSetGroup);
+  addTap($('rnd-g-mix'),startRandomSet);
+}
+function renderHomeTabs(){
+  const area=$('htabs');
+  if(!area)return;
+  const TAB_META={
+    grade:{ico:'📚'},A1A2:{ico:'🌱'},B1B2:{ico:'📖'},C1C2:{ico:'🎓'},roots:{ico:'🌳'},
+  };
+  area.innerHTML=TAB_DEFS.map(t=>{
+    const ws=tabWords(t.id);const pct=grpPct(ws);
+    const m=TAB_META[t.id]||{ico:'📚'};
+    const isOn=curTab===t.id;
+    return`<div class="htab${isOn?' on':''}" data-tab="${t.id}">
+      <div class="htab-badge">${pct}%</div>
+      <div class="htab-ico">${m.ico}</div>
+      <div class="htab-name">${t.label}</div>
+    </div>`;
+  }).join('');
+  area.querySelectorAll('.htab[data-tab]').forEach(el=>{
+    addTap(el,()=>{curTab=el.dataset.tab;renderHomeTabs();renderBranches();});
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ANTI-REPEAT RANDOM QUEUE
+// Ensures every word is seen before any repeats.
+// Separate queues per scope key (e.g. 'grade', 'A1A2', 'Lớp 6', etc.)
+// ══════════════════════════════════════════════════════════════
+function getRndQueue(key, words){
+  if(!DB.rndQueues)DB.rndQueues={};
+  const q=DB.rndQueues[key]||[];
+  // Remove IDs no longer in words pool
+  const validIds=new Set(words.map(w=>w.id));
+  let filtered=q.filter(id=>validIds.has(id));
+  // Chỉ bắt đầu 1 VÒNG MỚI (xáo lại toàn bộ) khi hàng đợi đã dùng HẾT SẠCH (0 từ còn lại) —
+  // KHÔNG refill sớm khi chỉ còn ít (vd còn 7/20). Refill sớm từng là lỗi khiến từ có thể lặp
+  // lại trước khi thực sự học hết 1 vòng toàn bộ từ trong phạm vi này.
+  if(filtered.length===0){
+    filtered=shuffle(words.map(w=>w.id));
+    DB.rndQueues[key]=filtered;
+    save();
+  }
+  return filtered;
+}
+function consumeRndQueue(key, words, n=20){
+  const q=getRndQueue(key,words);
+  const take=q.slice(0,n);
+  DB.rndQueues[key]=q.slice(n);
+  save();
+  return words.filter(w=>take.includes(w.id));
+}
+
+// ── Random: 1 random sub-group (unit / topic) ─────────────────────────────
+// Picks one random sub-group from the pool, uses anti-repeat for group order
+function startRandomGroup(scopeKey, words, getSubGroups){
+  if(!words.length){toast('Chưa có từ vựng!','err');return;}
+  const groups=getSubGroups(words); // [{label,words}]
+  if(!groups.length){toast('Không có nhóm nào!','err');return;}
+  // Anti-repeat for group order
+  const gKey='g_'+scopeKey;
+  if(!DB.rndQueues)DB.rndQueues={};
+  let gQueue=DB.rndQueues[gKey]||[];
+  const validLabels=new Set(groups.map(g=>g.label));
+  gQueue=gQueue.filter(l=>validLabels.has(l));
+  if(!gQueue.length){
+    gQueue=shuffle(groups.map(g=>g.label));
+    DB.rndQueues[gKey]=gQueue;save();
+  }
+  const chosenLabel=gQueue.shift();
+  DB.rndQueues[gKey]=gQueue;save();
+  const chosen=groups.find(g=>g.label===chosenLabel)||groups[0];
+  curLeaf={words:chosen.words,label:`🎯 ${chosen.label} (ngẫu nhiên)`};
+  toast(`🎯 Nhóm ngẫu nhiên: ${chosen.label}`,'ok');
+  startPractice();
+}
+
+// ── Random: 20 mixed words from whole pool (anti-repeat) ─────────────────
+function startRandom20(scopeKey, words){
+  if(!words.length){toast('Chưa có từ vựng!','err');return;}
+  const picked=consumeRndQueue(scopeKey,words,Math.min(20,words.length));
+  curLeaf={words:picked,label:`🎲 20 từ ngẫu nhiên (${scopeKey})`};
+  toast(`🎲 ${picked.length} từ ngẫu nhiên, không lặp lại!`,'ok');
+  startPractice();
+}
+
+// ── Sub-group extractors ──────────────────────────────────────────────────
+function subgroupsByUnit(words){
+  const m={};
+  words.forEach(w=>{
+    const u=w.unit||'Chung';
+    // Ghép cả Lớp vào key để KHÔNG gộp nhầm các Unit trùng số giữa những lớp khác nhau
+    // (vd: "Unit 1" của Lớp 6 và "Unit 1" của Lớp 7 phải là 2 nhóm riêng biệt).
+    const key=w.grade?`${w.grade} - Unit ${u}`:`Unit ${u}`;
+    if(!m[key])m[key]=[];
+    m[key].push(w);
+  });
+  return Object.entries(m).sort((a,b)=>{
+    const gradeIdx=k=>{const i=GRADE_ORDER.findIndex(g=>k.startsWith(g+' '));return i<0?99:i;};
+    const unitNum=k=>{const mm=k.match(/Unit\s*(\d+)/i);return mm?parseInt(mm[1]):0;};
+    const ga=gradeIdx(a[0]),gb=gradeIdx(b[0]);
+    if(ga!==gb)return ga-gb;
+    return unitNum(a[0])-unitNum(b[0]);
+  }).map(([l,ws])=>({label:l,words:ws}));
+}
+function subgroupsByTopic(words){
+  const m={};
+  words.forEach(w=>{const t=w.topic||'Khác';if(!m[t])m[t]=[];m[t].push(w);});
+  return Object.entries(m).map(([l,ws])=>({label:l,words:ws}));
+}
+function subgroupsByRoot(words){
+  const m={};
+  words.forEach(w=>{
+    const r=w.root||w.specialGroup;
+    if(r){if(!m[r])m[r]=[];m[r].push(w);}
+  });
+  return Object.entries(m).map(([l,ws])=>({label:l,words:ws}));
+}
+
+// ── Global random (all DB) ─────────────────────────────────────────────────
+function startRandomSet(){
+  if(!DB.words.length){toast('Chưa có từ vựng!','err');return;}
+  lastRandomStarter=startRandomSet;
+  startRandom20('ALL',DB.words);
+}
+function startRandomSetGroup(){
+  // Pick 1 random grade, then 1 random unit from that grade
+  if(!DB.words.length){toast('Chưa có từ vựng!','err');return;}
+  lastRandomStarter=startRandomSetGroup;
+  const gradeWs=DB.words.filter(w=>w.grade);
+  startRandomGroup('ALL_grade',gradeWs,subgroupsByUnit);
+}
+
+// ── Tab-scoped random ─────────────────────────────────────────────────────
+function startTabRandom20(tabId,label){
+  const ws=tabWords(tabId);
+  if(!ws.length){toast('Nhóm này chưa có từ vựng!','err');return;}
+  lastRandomStarter=()=>startTabRandom20(tabId,label);
+  startRandom20(tabId,ws);
+}
+function startTabRandomGroup(tabId,label){
+  const ws=tabWords(tabId);
+  if(!ws.length){toast('Nhóm này chưa có từ vựng!','err');return;}
+  lastRandomStarter=()=>startTabRandomGroup(tabId,label);
+  const getGroups=tabId==='grade'?subgroupsByUnit:
+    tabId==='roots'?subgroupsByRoot:subgroupsByTopic;
+  startRandomGroup(tabId,ws,getGroups);
+}
+
+// ── Grade-scoped random ───────────────────────────────────────────────────
+function startGradeRandom20(grade){
+  const ws=DB.words.filter(w=>w.grade===grade);
+  if(!ws.length){toast('Lớp này chưa có từ vựng!','err');return;}
+  lastRandomStarter=()=>startGradeRandom20(grade);
+  startRandom20('grade_'+grade,ws);
+}
+function startGradeRandomGroup(grade){
+  const ws=DB.words.filter(w=>w.grade===grade);
+  if(!ws.length){toast('Lớp này chưa có từ vựng!','err');return;}
+  lastRandomStarter=()=>startGradeRandomGroup(grade);
+  startRandomGroup('grade_grp_'+grade,ws,subgroupsByUnit);
+}
+
+function renderBranches(){
+  const area=$('barea');
+  if(!area)return;
+  if(curTab==='grade') renderGrades();
+  else if(curTab==='A1A2') renderTopicLevel(['A1','A2'],'Sơ cấp A1–A2');
+  else if(curTab==='B1B2') renderTopicLevel(['B1','B2'],'Trung cấp B1–B2');
+  else if(curTab==='C1C2') renderTopicLevel(['C1','C2'],'Cao cấp C1–C2');
+  else if(curTab==='roots') renderRoots();
+}
+
+// ── TAB: LỚP 6–12 ─────────────────────────────────────────────────────────
+// NOTE: clickable cards are wired with addEventListener (not onclick="...")
+// because embedding word data (JSON containing quotes/commas/apostrophes)
+// directly inside an HTML attribute breaks the markup — that was the bug
+// causing topic/unit clicks to silently fail.
+function renderGrades(){
+  const gradeMap={};
+  DB.words.forEach(w=>{if(w.grade){if(!gradeMap[w.grade])gradeMap[w.grade]=[];gradeMap[w.grade].push(w);}});
+  const area=$('barea');
+  const tabWs=tabWords('grade');
+  area.innerHTML=`
+  <div class="gdetail">
+    <div class="gdetail-top">
+      <div class="gdetail-ico">📚</div>
+      <div class="gdetail-mid">
+        <div class="gdetail-name">Phổ thông <span class="gdetail-badge">Đang chọn</span></div>
+        <div class="gdetail-sub">${tabWs.length} từ · Chương trình phổ thông</div>
+      </div>
+      ${ring(groupStats(tabWs).pct,48)}
+    </div>
+    <div class="gdetail-desc">Bộ từ vựng theo chương trình giáo dục phổ thông từ lớp 6 đến lớp 12.</div>
+    ${statsRowHTML(tabWs)}
+  </div>
+  <div class="rnd2-row">
+    <button class="rnd2-btn rnd-grp" id="rnd-grade-grp">🎯 Ôn 1 unit ngẫu nhiên</button>
+    <button class="rnd2-btn rnd-mix" id="rnd-grade-mix">🎲 20 từ hỗn hợp</button>
+  </div>
+  <div class="list-head"><div class="list-title">Các lớp (${GRADE_ORDER.length})</div></div>
+  <div id="grade-list"></div>`;
+  addTap($('rnd-grade-grp'),()=>startTabRandomGroup('grade','Lớp 6–12'));
+  addTap($('rnd-grade-mix'),()=>startTabRandom20('grade','Lớp 6–12'));
+  renderExpandGrid('grade-list',GRADE_ORDER,'grades',
+    (g,i)=>{
+      const ws=gradeMap[g]||[];const pct=grpPct(ws);
+      return`<div class="bcard" data-idx="${i}">
+        <div class="bc-icobox">${GRADE_ICONS[g]||'📚'}</div>
+        <div class="bc-mid"><div class="bc-name">${esc(g)}</div><div class="bc-cnt">${ws.length?ws.length+' từ':'Chưa có dữ liệu'}</div></div>
+        ${ring(pct,30)}
+      </div>`;
+    },
+    (g)=>openGrade(g)
+  );
+}
+
+function openGrade(grade){
+  curBranch=grade;
+  const ws=DB.words.filter(w=>w.grade===grade);
+  const unitMap={};
+  ws.forEach(w=>{const u=w.unit||'Chung';if(!unitMap[u])unitMap[u]=[];unitMap[u].push(w);});
+  const unitKeys=Object.keys(unitMap).sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb||a.localeCompare(b);});
+  const pct=grpPct(ws);
+  pushView(()=>openGrade(grade));
+  const area=$('mc');
+  area.innerHTML=`
+  ${backBtn()}
+  <div class="bcrumb">
+    <span class="bci" id="crumb-home">📚 Lớp 6–12</span>
+    <span class="bcsep">›</span><span class="bccur">${grade}</span>
+  </div>
+  <div class="branch-summary"><div>${ws.length} từ · ${unitKeys.length} unit · ${pct}% đã học</div></div>
+  <div class="rnd2-row">
+    <button class="rnd2-btn rnd-grp" id="rnd-g-grp">🎯 Ôn 1 unit ngẫu nhiên</button>
+    <button class="rnd2-btn rnd-mix" id="rnd-g-mix">🎲 20 từ hỗn hợp (${grade})</button>
+  </div>
+  <div class="bgrid">
+    ${unitKeys.map((u,i)=>{const uws=unitMap[u];const upct=grpPct(uws);return`<div class="bcard" data-idx="${i}">
+      <div class="bc-icobox">📝</div>
+      <div class="bc-mid"><div class="bc-name">${esc(u)}</div><div class="bc-cnt">${uws.length} từ</div></div>
+      ${ring(upct,30)}
+    </div>`;}).join('')}
+  </div>`;
+  wireBack();
+  addTap($('crumb-home'),()=>nav('home'));
+  addTap($('rnd-g-grp'),()=>startGradeRandomGroup(grade));
+  addTap($('rnd-g-mix'),()=>startGradeRandom20(grade));
+  area.querySelectorAll('.bcard[data-idx]').forEach((el,i)=>{
+    const u=unitKeys[i];
+    addTap(el,()=>openLeaf(unitMap[u],`${grade} › ${u}`,grade,u));
+  });
+}
+
+// ── TAB: SƠ/TRUNG/CAO CẤP ────────────────────────────────────────────────
+function renderTopicLevel(levels, label){
+  const levelWs=DB.words.filter(w=>levels.includes(w.level));
+  const topicMap={};
+  levelWs.forEach(w=>{if(w.topic){if(!topicMap[w.topic])topicMap[w.topic]=[];topicMap[w.topic].push(w);}});
+  const area=$('barea');
+  const tabId=levels.includes('A1')?'A1A2':levels.includes('B1')?'B1B2':'C1C2';
+  const icoMap={A1A2:'🌱',B1B2:'📖',C1C2:'🎓'};
+  area.innerHTML=`
+  <div class="gdetail">
+    <div class="gdetail-top">
+      <div class="gdetail-ico">${icoMap[tabId]}</div>
+      <div class="gdetail-mid">
+        <div class="gdetail-name">${esc(label)} <span class="gdetail-badge">Đang chọn</span></div>
+        <div class="gdetail-sub">${levelWs.length} từ · Theo khung CEFR</div>
+      </div>
+      ${ring(groupStats(levelWs).pct,48)}
+    </div>
+    ${statsRowHTML(levelWs)}
+  </div>
+  <div class="rnd2-row">
+    <button class="rnd2-btn rnd-grp" id="rnd-t-grp">🎯 Ôn 1 chủ đề ngẫu nhiên</button>
+    <button class="rnd2-btn rnd-mix" id="rnd-t-mix">🎲 20 từ hỗn hợp</button>
+  </div>
+  <div class="list-head"><div class="list-title">Các chủ đề (${TOPICS_DATA.length})</div></div>
+  <div id="topic-list"></div>`;
+  addTap($('rnd-t-grp'),()=>startTabRandomGroup(tabId,label));
+  addTap($('rnd-t-mix'),()=>startTabRandom20(tabId,label));
+  renderExpandGrid('topic-list',TOPICS_DATA,'topics_'+tabId,
+    (t,i)=>{
+      const ws=topicMap[t.name]||[];const tpct=grpPct(ws);
+      const icon=Object.entries(TOPIC_ICONS).find(([k])=>t.name.toLowerCase().includes(k.toLowerCase()))?.[1]||'📚';
+      return`<div class="bcard" data-idx="${i}">
+        <div class="bc-icobox">${icon}</div>
+        <div class="bc-mid"><div class="bc-name">${esc(t.name)}</div><div class="bc-cnt">${ws.length?ws.length+' từ':'Chưa có dữ liệu'}</div></div>
+        ${ring(tpct,30)}
+      </div>`;
+    },
+    (t)=>openLeaf(topicMap[t.name]||[],t.name,label,t.name)
+  );
+}
+
+// ── TAB: GỐC TỪ ───────────────────────────────────────────────────────────
+function rootWords(r){
+  const exWords=r.examples.split(',').map(s=>s.trim().toLowerCase());
+  return DB.words.filter(w=>
+    (w.root&&w.root.toLowerCase().includes(r.root.replace(/-/g,'').toLowerCase()))||
+    exWords.includes(w.word.toLowerCase())
+  );
+}
+function renderRoots(){
+  const area=$('barea');
+  const allRootWs=tabWords('roots');
+  area.innerHTML=`
+  <div class="gdetail">
+    <div class="gdetail-top">
+      <div class="gdetail-ico">🌳</div>
+      <div class="gdetail-mid">
+        <div class="gdetail-name">Gốc từ <span class="gdetail-badge">Đang chọn</span></div>
+        <div class="gdetail-sub">${allRootWs.length} từ · Gốc La-tinh/Hy Lạp</div>
+      </div>
+      ${ring(groupStats(allRootWs).pct,48)}
+    </div>
+    ${statsRowHTML(allRootWs)}
+  </div>
+  <div class="rnd2-row">
+    <button class="rnd2-btn rnd-grp" id="rnd-r-grp">🎯 Ôn 1 gốc từ ngẫu nhiên</button>
+    <button class="rnd2-btn rnd-mix" id="rnd-r-mix">🎲 20 từ hỗn hợp</button>
+  </div>
+  <div class="list-head"><div class="list-title">Các gốc từ (${ROOTS_DATA.length})</div></div>
+  <div id="root-list"></div>`;
+  addTap($('rnd-r-grp'),()=>startTabRandomGroup('roots','Gốc từ'));
+  addTap($('rnd-r-mix'),()=>startTabRandom20('roots','Gốc từ'));
+  renderExpandGrid('root-list',ROOTS_DATA,'roots',
+    (r,i)=>{
+      const ws=rootWords(r);const rpct=grpPct(ws);
+      const origins={Latin:'🏛',Greek:'⚗️'};
+      const icon=origins[r.origin]||'🌱';
+      return`<div class="bcard" data-idx="${i}">
+        <div class="bc-icobox">${icon}</div>
+        <div class="bc-mid"><div class="bc-name" style="font-family:'DM Mono',monospace">${esc(r.root)}</div><div class="bc-cnt">${ws.length} từ · ${esc(r.meaning)}</div></div>
+        ${ring(rpct,30)}
+      </div>`;
+    },
+    (r)=>openRootLeaf(r)
+  );
+}
+
+function openRootLeaf(r){
+  lastRandomStarter=null; // chọn thủ công 1 gốc từ cụ thể → không còn là phiên ngẫu nhiên nữa
+  const ws=rootWords(r);
+  curLeaf={words:ws,label:r.root};
+  const pct=grpPct(ws);
+  pushView(()=>openRootLeaf(r));
+  const area=$('mc');
+  area.innerHTML=`
+  ${backBtn()}
+  <div class="bcrumb">
+    <span class="bci" id="crumb-home">🌳 Gốc từ</span>
+    <span class="bcsep">›</span><span class="bccur">${r.root}</span>
+  </div>
+  <div class="root-info">
+    <div class="root-title">${r.root}</div>
+    <div class="root-row">
+      <span class="root-tag">📌 ${r.meaning}</span>
+      <span class="root-tag">${r.origin}</span>
+      <span class="root-tag">Ví dụ: ${r.examples}</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="font-size:12px;color:var(--text2)">${ws.length} từ trong database · ${pct}% đã học</div>
+  </div>
+  <div class="leaf-acts">
+    <button class="la study" id="btn-study">📖 Học từ vựng</button>
+    ${ws.length?`<button class="la practice" id="btn-practice">🎮 Luyện tập</button>`:''}
+  </div>
+  <div id="leafContent"></div>`;
+  wireBack();
+  addTap($('crumb-home'),()=>nav('home'));
+  addTap($('btn-study'),startStudy);
+  addTap($('btn-practice'),startPractice);
+  startStudy();
+}
+
+// ── LEAF: GRADE UNIT / TOPIC ────────────────────────────────────────────────
+function openLeaf(words, label, branch, leaf){
+  lastRandomStarter=null; // chọn thủ công 1 unit/chủ đề cụ thể → không còn là phiên ngẫu nhiên nữa
+  curBranch=branch;curLeaf={words,label};
+  const pct=grpPct(words);
+  const isGrade=GRADE_ORDER.includes(branch);
+  pushView(()=>openLeaf(words,label,branch,leaf));
+  const area=$('mc');
+  area.innerHTML=`
+  ${backBtn()}
+  <div class="bcrumb">
+    <span class="bci" id="crumb-home">🏠</span>
+    <span class="bcsep">›</span>
+    <span class="bci" id="crumb-branch">${branch}</span>
+    <span class="bcsep">›</span>
+    <span class="bccur">${leaf}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    <div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:700">${label}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">${words.length} từ vựng · ${pct}% đã học</div>
+    </div>
+    ${ring(pct)}
+  </div>
+  <div class="leaf-acts">
+    <button class="la study" id="btn-study">📖 Học từ vựng</button>
+    ${words.length?`<button class="la practice" id="btn-practice">🎮 Luyện tập (${({quiz:'Trắc nghiệm',type:'Typing',match:'Ghép cặp',mock:'Thi thử'})[DB.settings.mode]||''})</button>`:''}
+  </div>
+  <div id="leafContent"></div>`;
+  wireBack();
+  addTap($('crumb-home'),()=>nav('home'));
+  addTap($('crumb-branch'),()=>{isGrade?openGrade(branch):(curTab=({['Sơ cấp A1–A2']:'A1A2',['Trung cấp B1–B2']:'B1B2',['Cao cấp C1–C2']:'C1C2'})[branch]||curTab,nav('home'));});
+  addTap($('btn-study'),startStudy);
+  addTap($('btn-practice'),startPractice);
+  startStudy();
+}
+
+// ══════════════════════════════════════════════════════════════
+// STUDY MODE
+// ══════════════════════════════════════════════════════════════
+function startStudy(){
+  const words=curLeaf.words;
+  const S=DB.settings;
+  const lc=$('leafContent');if(!lc)return;
+  if(!words.length){lc.innerHTML=`<div class="empty"><div class="big">📭</div><p>Chưa có từ vựng trong nhóm này</p></div>`;return;}
+  lc.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;font-weight:600">📖 ${words.length} từ vựng</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text2)">Hiện:</span>
+      ${[['showPhonetic','Phiên âm'],['showPos','Loại từ'],['showColloc','Cụm từ'],['showExample','Ví dụ'],['showLevel','Cấp độ']].map(([k,l])=>`<button class="itog${S[k]?' on':''}" onclick="toggleInfo('${k}',this)">${l}</button>`).join('')}
+    </div>
+  </div>
+  <div class="wsgrid" id="wsgrid">${words.map(w=>wsCard(w)).join('')}</div>`;
+}
+function wsCard(w){
+  const S=DB.settings;
+  return`<div class="wscard">
+    <div class="ws-top">
+      <div class="ws-word">${esc(w.word)}</div>
+      <button class="spk" onclick="speak('${escJs(w.word)}')">🔊</button>
+      ${S.showPhonetic&&w.phonetic?`<div class="ws-ph">${esc(w.phonetic)}</div>`:''}
+      ${S.showPos&&w.type?`<div class="ws-pos">${esc(w.type)}</div>`:''}
+      ${S.showLevel&&w.level?`<span class="lv ${esc(w.level)}">${esc(w.level)}</span>`:''}
+    </div>
+    <div class="ws-mean">${esc(w.meaning)}</div>
+    ${S.showColloc&&w.collocations?`<div class="ws-col">📌 ${esc(w.collocations)} <button class="spk" style="width:20px;height:20px;font-size:11px" onclick="speak('${escJs(w.collocations)}','en-US',0.8)">🔊</button></div>`:''}
+    ${S.showExample&&w.ex1?`<div class="ws-ex">"${esc(w.ex1)}" <button class="spk" style="width:20px;height:20px;font-size:11px" onclick="speak('${escJs(w.ex1)}','en-US',0.8)">🔊</button></div>`:''}
+    ${S.showExample&&w.ex2?`<div class="ws-ex">"${esc(w.ex2)}" <button class="spk" style="width:20px;height:20px;font-size:11px" onclick="speak('${escJs(w.ex2)}','en-US',0.8)">🔊</button></div>`:''}
+    <div class="ws-meta">
+      ${w.grade?`<span class="mtag">${esc(w.grade)}</span>`:''}
+      ${w.unit?`<span class="mtag">${esc(w.unit)}</span>`:''}
+      ${w.topic?`<span class="mtag">${esc(w.topic)}</span>`:''}
+      ${w.specialGroup?`<span class="mtag" style="color:var(--pur)">${esc(w.specialGroup)}</span>`:''}
+      ${w.root?`<span class="mtag" style="color:var(--ac)">🌱${esc(w.root)}</span>`:''}
+    </div>
+  </div>`;
+}
+function toggleInfo(key,btn){
+  DB.settings[key]=!DB.settings[key];save();
+  btn.classList.toggle('on',DB.settings[key]);
+  const g=$('wsgrid');if(g)g.innerHTML=curLeaf.words.map(w=>wsCard(w)).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// PRACTICE
+// ══════════════════════════════════════════════════════════════
+function startPractice(){
+  const words=curLeaf?.words;
+  if(!words?.length){toast('Không có từ vựng!','err');return;}
+  stopAutoSpeak();clearInterval(G.ti);
+  G.mode=DB.settings.mode;
+  G.words=shuffle([...words]);
+  G.queue=[...G.words]; // each word once, random order
+  G.idx=0;G.score=0;G.wrong=[];G.start=Date.now();G.ml=null;G.mmatched=0;
+  if(G.mode==='quiz')rQuiz();
+  else if(G.mode==='type')rType();
+  else if(G.mode==='match')rMatch();
+  else if(G.mode==='mock')rMock();
+  // Show after render so #mc already has content and font-size applies correctly
+}
+
+// ── WORD INFO BLOCK ────────────────────────────────────────────────────────
+function refreshCurrentQ(){
+  if(G.mode==='quiz')rQuiz();
+  else if(G.mode==='type')rType();
+  else if(G.mode==='mock')rMockQ();
+  // match mode has no single-word redraw target; leave as-is
+}
+function wib(w){
+  const S=DB.settings;const stars=getStars(w.id);
+  // Hàng nhãn nguồn gốc từ (Lớp + Unit, hoặc Chủ đề / Gốc từ) — hiển thị NGAY TRÊN từ vựng,
+  // để biết từ đang học thuộc lớp/unit/chủ đề nào, kể cả khi luyện tập với bộ từ trộn lẫn nhiều nhóm.
+  const srcParts=[];
+  if(w.grade)srcParts.push(w.grade);
+  if(w.unit)srcParts.push('Unit '+w.unit);
+  if(w.topic)srcParts.push(w.topic);
+  if(!w.grade&&!w.unit&&(w.specialGroup||w.root))srcParts.push(w.specialGroup||w.root);
+  const srcRow=srcParts.length?`<div class="q-src">${srcParts.map(s=>`<span class="mtag">${esc(s)}</span>`).join('')}</div>`:'';
+  return`
+  ${srcRow}
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="q-word">${esc(w.word)}</div>
+    <button class="spkbtn" onclick="speak('${escJs(w.word)}')">🔊</button>
+    ${w.level?`<span class="lv ${esc(w.level)}">${esc(w.level)}</span>`:''}
+  </div>
+  ${S.showPhonetic&&w.phonetic?`<div class="q-ph">${esc(w.phonetic)}</div>`:''}
+  ${S.showPos&&w.type?`<div class="q-pos">${esc(w.type)}</div>`:''}
+  ${S.showColloc&&w.collocations?`<div class="q-col">📌 ${esc(w.collocations)} <button class="spkbtn" onclick="speak('${escJs(w.collocations)}','en-US',0.8)" style="font-size:13px">🔊</button></div>`:''}
+  ${S.showExample&&w.ex1?`<div class="q-ex">"${esc(w.ex1)}" <button class="spkbtn" onclick="speak('${escJs(w.ex1)}','en-US',0.8)" style="font-size:13px">🔊</button></div>`:''}
+  ${S.showExample&&w.ex2?`<div class="q-ex">"${esc(w.ex2)}" <button class="spkbtn" onclick="speak('${escJs(w.ex2)}','en-US',0.8)" style="font-size:13px">🔊</button></div>`:''}
+  <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap">
+    <button class="hbtn" style="width:28px;height:24px;font-size:12px" onclick="DB.settings.autoSpeak=!DB.settings.autoSpeak;save();this.textContent=DB.settings.autoSpeak?'🔊':'🔇';if(DB.settings.autoSpeak)startAutoSpeak(G.queue[G.idx]);else stopAutoSpeak()">${DB.settings.autoSpeak?'🔊':'🔇'}</button>
+    <div class="itogs">
+      ${[['showPhonetic','Phiên âm'],['showColloc','Cụm từ'],['showExample','Ví dụ']].map(([k,l])=>`<button class="itog${S[k]?' on':''}" onclick="DB.settings['${k}']=!DB.settings['${k}'];save();refreshCurrentQ()">${l}</button>`).join('')}
+    </div>
+  </div>
+  <div class="srow">
+    <span style="font-size:10px;color:var(--text3);margin-right:3px">Mức nhớ:</span>
+    ${[1,2,3,4,5].map(n=>`<button class="sbtn${stars>=n?' lit':''}" onclick="setStar('${w.id}',${n},this)">★</button>`).join('')}
+  </div>`;
+}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────
+function rQuiz(){
+  if(G.idx>=G.queue.length){endG();return;}
+  const w=G.queue[G.idx];
+  const pool=G.words.length>=4?G.words:DB.words;
+  const opts=shuffle([w,...shuffle(pool.filter(x=>x.id!==w.id)).slice(0,3)]);
+  startAutoSpeak(w);
+  setGameHTML(`
+  ${gameHeader()}
+  <div class="qcard">${wib(w)}</div>
+  <div class="ogrid">${opts.map(o=>`<button class="obtn" onclick="chkQ('${w.id}','${o.id}',this)">${esc(o.meaning)}</button>`).join('')}</div>`);
+}
+function chkQ(cid,chosen,btn){
+  document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
+  const w=G.queue[G.idx];const ok=cid===chosen;
+  btn.classList.add(ok?'correct':'wrong');
+  if(!ok){document.querySelectorAll('.obtn').forEach(b=>{if(b.textContent===w.meaning)b.classList.add('correct');});G.wrong.push(w);}
+  if(ok)G.score++;markWord(w.id,ok);
+  setTimeout(()=>{stopAutoSpeak();G.idx++;rQuiz();},1100);
+}
+
+// ── TYPING ─────────────────────────────────────────────────────────────────
+function rType(){
+  if(G.idx>=G.queue.length){endG();return;}
+  const w=G.queue[G.idx];
+  startAutoSpeak(w);
+  setGameHTML(`
+  ${gameHeader()}
+  <div class="qcard">${wib(w)}</div>
+  <input class="tinput" id="ti" placeholder="Gõ nghĩa tiếng Việt..." autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter'){event.preventDefault();chkT();}">
+  <div style="margin-top:9px;display:flex;gap:8px">
+    <button class="btn-p" style="flex:1" id="ti-submit" onclick="chkT()">✅ Kiểm tra</button>
+    <button class="btn-s" id="ti-reveal" onclick="revealT()">👁 Xem đáp án</button>
+  </div>`);
+  $('ti').focus();
+}
+function norm(s){return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ');}
+// Khoá input + 2 nút lại để tránh bấm/gõ Enter nhiều lần trong lúc đang chờ chuyển từ tiếp theo
+function lockTypingUI(){
+  const inp=$('ti');if(inp)inp.disabled=true;
+  const sb=$('ti-submit');if(sb)sb.disabled=true;
+  const rv=$('ti-reveal');if(rv)rv.disabled=true;
+}
+function chkT(){
+  const inp=$('ti');if(!inp||inp.disabled)return;
+  const w=G.queue[G.idx];
+  lockTypingUI();
+  const ok=norm(inp.value).length>1&&(norm(inp.value).includes(norm(w.meaning.split('/')[0]))||norm(w.meaning).includes(norm(inp.value)));
+  inp.classList.add(ok?'correct':'wrong');
+  if(!ok)inp.value=`❌ ${inp.value}  →  ✅ ${w.meaning}`;
+  if(ok)G.score++;else G.wrong.push(w);markWord(w.id,ok);
+  setTimeout(()=>{stopAutoSpeak();G.idx++;rType();},1300);
+}
+// "Xem đáp án" — dành cho khi không biết/không nhớ nghĩa: hiện luôn đáp án đúng để học,
+// tính là chưa nhớ (giống Bỏ qua) rồi chuyển từ tiếp theo, không cần đoán mò.
+function revealT(){
+  const inp=$('ti');if(!inp||inp.disabled)return;
+  const w=G.queue[G.idx];
+  lockTypingUI();
+  inp.value=`👁 Đáp án: ${w.meaning}`;
+  inp.classList.add('wrong');
+  G.wrong.push(w);markWord(w.id,false);
+  setTimeout(()=>{stopAutoSpeak();G.idx++;rType();},1600);
+}
+
+// ── MATCHING ───────────────────────────────────────────────────────────────
+function rMatch(){
+  const batch=G.words.slice(G.idx,G.idx+8);
+  if(!batch.length){endG();return;}
+  G.mbatch=batch;G.ml=null;G.mmatched=0;
+  const L=shuffle([...batch]),R=shuffle([...batch]);
+  setGameHTML(`
+  ${gameHeader()}
+  <div class="mgrid">
+    <div class="mcol">${L.map(w=>`<div class="mitem" data-id="${w.id}" data-s="L" onclick="selM(this);speak('${escJs(w.word)}')">🔊 ${esc(w.word)}</div>`).join('')}</div>
+    <div class="mcol">${R.map(w=>`<div class="mitem" data-id="${w.id}" data-s="R" onclick="selM(this)">${esc(w.meaning)}</div>`).join('')}</div>
+  </div>`);
+}
+function selM(el){
+  if(el.classList.contains('matched'))return;
+  const s=el.dataset.s;
+  if(!G.ml){if(s==='L'){document.querySelectorAll('.mitem.sel').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');G.ml=el;}return;}
+  if(s==='L'){document.querySelectorAll('.mitem.sel').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');G.ml=el;return;}
+  const le=G.ml;G.ml=null;
+  if(le.dataset.id===el.dataset.id){
+    le.classList.remove('sel');[le,el].forEach(e=>e.classList.add('matched'));
+    G.score++;G.idx++;const w=G.mbatch.find(x=>x.id===le.dataset.id);if(w)markWord(w.id,true);
+    G.mmatched++;
+    const pf=document.querySelector('.pfill');if(pf)pf.style.width=`${(G.idx/G.words.length)*100}%`;
+    if(G.mmatched===G.mbatch.length){G.idx>=G.words.length?setTimeout(endG,500):setTimeout(rMatch,600);}
+  }else{
+    le.classList.remove('sel');[le,el].forEach(e=>{e.classList.add('shake');setTimeout(()=>e.classList.remove('shake'),350);});
+    const w=G.mbatch.find(x=>x.id===le.dataset.id);if(w&&!G.wrong.find(x=>x.id===w.id)){G.wrong.push(w);markWord(w.id,false);}
+  }
+}
+
+// ── MOCK (thi thử, 5s/từ) ─────────────────────────────────────────────────
+function rMock(){
+  G.tsec=G.queue.length*5;
+  rMockQ();
+  G.ti=setInterval(()=>{
+    G.tsec--;
+    const td=$('td');if(td){td.textContent=fmtT(G.tsec);td.className='tdsp'+(G.tsec<=30?' danger':'');}
+    if(G.tsec<=0){clearInterval(G.ti);endG(true);}
+  },1000);
+}
+function rMockQ(){
+  if(G.idx>=G.queue.length){clearInterval(G.ti);endG();return;}
+  const w=G.queue[G.idx];
+  const pool=G.words.length>=4?G.words:DB.words;
+  const opts=shuffle([w,...shuffle(pool.filter(x=>x.id!==w.id)).slice(0,3)]);
+  startAutoSpeak(w,false);
+  setGameHTML(`
+  <div class="ghdr">
+    <div class="pbar"><div class="pfill" style="width:${(G.idx/G.queue.length)*100}%"></div></div>
+    <div class="gstat">✅${G.score} ❌${G.wrong.length} · ${G.idx+1}/${G.queue.length}</div>
+    <div class="tdsp" id="td">${fmtT(G.tsec)}</div>
+  </div>
+  <div style="font-size:0.8em;color:var(--text2);margin-bottom:8px">⏱ Thi thử · ${fmtT(G.queue.length*5)} (${G.queue.length} từ × 5s)</div>
+  <div class="qcard">${wib(w)}</div>
+  <div class="ogrid">${opts.map(o=>`<button class="obtn" onclick="chkM('${w.id}','${o.id}',this)">${esc(o.meaning)}</button>`).join('')}</div>`);
+}
+function chkM(cid,chosen,btn){
+  document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
+  const w=G.queue[G.idx];const ok=cid===chosen;
+  btn.classList.add(ok?'correct':'wrong');
+  if(!ok){document.querySelectorAll('.obtn').forEach(b=>{if(b.textContent===w.meaning)b.classList.add('correct');});G.wrong.push(w);}
+  if(ok)G.score++;markWord(w.id,ok);
+  setTimeout(()=>{stopAutoSpeak();G.idx++;rMockQ();},750);
+}
+
+// Wraps game content in #practice-wrap — cỡ chữ tự động theo --fsr chung của cả app (nút A-/A+ ở header)
+function setGameHTML(html){
+  $('mc').innerHTML=`<div id="practice-wrap">${html}</div>`;
+}
+
+// ── GAME HEADER ────────────────────────────────────────────────────────────
+function gameHeader(){
+  const total=G.mode==='match'?G.words.length:G.queue.length;
+  return`<div class="ghdr">
+    <div class="pbar"><div class="pfill" style="width:${(G.idx/total)*100}%"></div></div>
+    <div class="gstat">✅${G.score} ❌${G.wrong.length} · ${G.idx+1}/${total}</div>
+  </div>`;
+}
+
+// ── END GAME ───────────────────────────────────────────────────────────────
+function endG(timeout=false){
+  stopAutoSpeak();clearInterval(G.ti);
+  
+  const total=G.mode==='match'?G.words.length:G.queue.length;
+  const pct=Math.round((G.score/Math.max(total,1))*100);
+  const dur=Math.round((Date.now()-G.start)/1000);
+  const ml={quiz:'Trắc nghiệm',type:'Typing',match:'Ghép cặp',mock:'Thi thử'};
+  DB.history.unshift({id:uid(),mode:G.mode,label:curLeaf?.label||'',total,score:G.score,pct,ww:G.wrong.map(w=>w.id),date:new Date().toISOString(),dur});
+  if(DB.history.length>100)DB.history.pop();save();
+  // "Học tiếp bộ mới" chỉ hiện khi phiên vừa xong là 1 phiên NGẪU NHIÊN (không phải chọn thủ công
+  // 1 unit/chủ đề cụ thể) — bấm vào sẽ tự lấy batch tiếp theo, không lặp từ đã học, nhờ hàng đợi
+  // chống lặp có sẵn (DB.rndQueues), cho đến khi hết 1 vòng toàn bộ từ trong phạm vi đó.
+  const canContinue=typeof lastRandomStarter==='function';
+  $('mc').innerHTML=`
+  <div class="rcard">
+    ${timeout?'<div style="color:var(--red);font-size:13px;margin-bottom:6px">⏰ Hết giờ!</div>':''}
+    <div class="rscore">${pct}%</div>
+    <div class="rlbl">${G.score}/${total} · ${ml[G.mode]||G.mode} · ${fmtT(dur)}</div>
+    <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn-p" onclick="startPractice()">🔄 Luyện lại</button>
+      ${canContinue?`<button class="btn-p" style="background:var(--blu)" onclick="lastRandomStarter()">▶️ Học tiếp bộ mới</button>`:''}
+      ${G.wrong.length?`<button class="btn-s" onclick="practiceWrong()">📖 Ôn từ sai (${G.wrong.length})</button>`:''}
+      <button class="btn-s" onclick="goBack()">⬅ Quay lại</button>
+      <button class="btn-s" onclick="nav('home')">🏠 Trang chủ</button>
+    </div>
+    ${G.wrong.length?`<div style="text-align:left">
+      <div style="font-size:12px;font-weight:600;margin-bottom:7px;color:var(--text2)">Từ sai:</div>
+      <div class="wlist">${G.wrong.map(w=>`<div class="witem"><span class="wen">${esc(w.word)}</span><span class="wvi">${esc(w.meaning)}</span></div>`).join('')}</div>
+    </div>`:`<div style="color:var(--ac);font-size:15px;margin-top:6px">🎉 Hoàn hảo!</div>`}
+  </div>`;
+}
+function practiceWrong(){
+  if(!G.wrong.length)return;
+  const saved=curLeaf;curLeaf={words:G.wrong,label:'Ôn từ sai'};
+  G.words=shuffle([...G.wrong]);G.queue=[...G.words];G.idx=0;G.score=0;G.wrong=[];G.start=Date.now();
+  if(G.mode==='quiz')rQuiz();else if(G.mode==='type')rType();else if(G.mode==='match')rMatch();else rMock();
+  curLeaf=saved;
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function rDash(selMode){
+  selMode=selMode||DB.settings.dashMode||'quiz';
+  DB.settings.dashMode=selMode;save();
+  const total=DB.words.length;
+  const hcells=[];
+  for(let i=89;i>=0;i--){const d=new Date(Date.now()-i*86400000);const v=DB.act[ds(d)]||0;const lv=v===0?0:v<3?1:v<8?2:v<15?3:4;hcells.push(`<div class="hc" data-v="${lv}" title="${ds(d)}: ${v}"></div>`);}
+  const gradeMap={};DB.words.forEach(w=>{if(w.grade){if(!gradeMap[w.grade])gradeMap[w.grade]=[];gradeMap[w.grade].push(w);}});
+
+  // ── Per-mode summary boxes ──
+  const modeSummary=MODES.map(m=>{
+    const mp=DB.modeProgress&&DB.modeProgress[m]||{};
+    const learned=DB.words.filter(w=>(mp[w.id]||{}).correct>0).length;
+    const pct=total?Math.round(learned/total*100):0;
+    return{m,learned,pct};
+  });
+
+  // ── Per-mode grade progress (for selected mode) ──
+  const selMp=DB.modeProgress&&DB.modeProgress[selMode]||{};
+  const selSeen=DB.words.filter(w=>(selMp[w.id]||{}).seen>0).length;
+  const selMastered=DB.words.filter(w=>(selMp[w.id]||{}).consec>=3).length;
+  const selPct=total?Math.round(selSeen/total*100):0;
+
+  // ── 30-day breakdown ──
+  const wordById={};DB.words.forEach(w=>wordById[w.id]=w);
+  const days30=[];
+  for(let i=29;i>=0;i--){const d=new Date(Date.now()-i*86400000);const k=ds(d);const ids=DB.dailyLog[k]||[];days30.push({date:k,label:d.toLocaleDateString('vi',{day:'2-digit',month:'2-digit'}),count:ids.length,ids});}
+  const total30=days30.reduce((a,d)=>a+d.count,0);
+  const maxDay=Math.max(1,...days30.map(d=>d.count));
+  const allIds30=new Set();days30.forEach(d=>d.ids.forEach(id=>allIds30.add(id)));
+  const topicCount30={},levelCount30={};
+  allIds30.forEach(id=>{const w=wordById[id];if(!w)return;if(w.topic)topicCount30[w.topic]=(topicCount30[w.topic]||0)+1;if(w.level)levelCount30[w.level]=(levelCount30[w.level]||0)+1;});
+  const topTopics=Object.entries(topicCount30).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const levelOrder=['A1','A2','B1','B2','C1','C2'];
+  const levelBars=levelOrder.filter(l=>levelCount30[l]).map(l=>[l,levelCount30[l]]);
+  const maxTopic=Math.max(1,...topTopics.map(t=>t[1]));
+  const maxLevel=Math.max(1,...levelBars.map(l=>l[1]));
+
+  $('mc').innerHTML=`
+  <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:700;margin-bottom:14px">📊 Dashboard</div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">🎮 Tiến độ theo chế độ luyện tập</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+      ${modeSummary.map(({m,learned,pct})=>`
+      <div style="background:var(--bg3);border:2px solid ${m===selMode?'var(--ac)':'var(--border)'};border-radius:var(--rs);padding:10px;cursor:pointer;text-align:center;transition:all .14s" onclick="rDash('${m}')">
+        <div style="font-size:11px;font-weight:700;color:${m===selMode?'var(--ac)':'var(--text2)'};margin-bottom:5px">${modeLabels[m]}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:${pct>0?'var(--ac)':'var(--text3)'}">${pct}%</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">${learned}/${total} từ</div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;margin-bottom:2px">📚 Chi tiết: ${modeLabels[selMode]}</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${selSeen} đã gặp · ${selMastered} thành thạo (≥3 đúng liên tiếp) · ${selPct}% tiến độ</div>
+    ${GRADE_ORDER.filter(g=>gradeMap[g]).map(g=>{
+      const ws=gradeMap[g];const sp=grpPct(ws,selMode);
+      const learned=ws.filter(w=>(selMp[w.id]||{}).correct>0).length;
+      const st=sp===0?['ns','Chưa học']:sp===100?['cp','Xong']:['ip','Đang học'];
+      return`<div class="spi"><div class="sph"><span class="spn">${g}</span><span class="sps ${st[0]}">${st[1]}</span></div><div class="spbar"><div class="spfill" style="width:${sp}%"></div></div><div class="spft"><span>${learned}/${ws.length}</span><span>${sp}%</span></div></div>`;
+    }).join('')}
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;margin-bottom:2px">📅 30 ngày gần nhất (tất cả chế độ)</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${total30} lượt đúng · ${allIds30.size} từ riêng biệt</div>
+    <div class="day30-chart">${days30.map(d=>`<div class="day30-bar-wrap" title="${d.label}: ${d.count}"><div class="day30-bar" style="height:${Math.max(2,(d.count/maxDay)*60)}px"></div></div>`).join('')}</div>
+    <div class="day30-labels"><span>${days30[0].label}</span><span>${days30[14].label}</span><span>${days30[29].label}</span></div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">📌 Theo chủ đề (30 ngày)</div>
+    ${topTopics.length?topTopics.map(([t,c])=>`<div class="bar-row"><span class="bar-label">${t}</span><div class="bar-track"><div class="bar-fill" style="width:${(c/maxTopic)*100}%"></div></div><span class="bar-val">${c}</span></div>`).join(''):'<div style="font-size:12px;color:var(--text3)">Chưa có dữ liệu</div>'}
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">🎓 Theo trình độ CEFR (30 ngày)</div>
+    ${levelBars.length?levelBars.map(([l,c])=>`<div class="bar-row"><span class="bar-label"><span class="lv ${l}">${l}</span></span><div class="bar-track"><div class="bar-fill" style="width:${(c/maxLevel)*100}%"></div></div><span class="bar-val">${c}</span></div>`).join(''):'<div style="font-size:12px;color:var(--text3)">Chưa có dữ liệu</div>'}
+  </div>
+
+  <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px">🗓 Heatmap 90 ngày</div><div class="hmap">${hcells.join('')}</div><div style="display:flex;gap:4px;align-items:center;margin-top:6px;font-size:10px;color:var(--text3)"><span>Ít</span><div class="hc"></div><div class="hc" data-v="1"></div><div class="hc" data-v="2"></div><div class="hc" data-v="3"></div><div class="hc" data-v="4"></div><span>Nhiều</span></div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════════════════════
+function rHist(){
+  const ml={quiz:'Trắc nghiệm',type:'Typing',match:'Ghép cặp',mock:'Thi thử'};
+  $('mc').innerHTML=!DB.history.length?`<div class="empty"><div class="big">🕘</div><p>Chưa có lịch sử</p></div>`:`
+  <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:700;margin-bottom:14px">🕘 Lịch sử</div>
+  ${DB.history.slice(0,60).map(h=>`<div class="hitem">
+    <div class="hmode">${ml[h.mode]||h.mode}</div>
+    <div class="hinf"><div class="httl">${h.label||'—'}</div><div class="hsub">${new Date(h.date).toLocaleString('vi')} · ${fmtT(h.dur||0)} · ${h.total} từ</div></div>
+    <div class="hscr ${h.pct>=70?'good':'bad'}">${h.pct}%</div>
+  </div>`).join('')}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// BACKUP & RESTORE
+// ══════════════════════════════════════════════════════════════
+function exportBackup(){
+  if(!DB.words.length){toast('Chưa có dữ liệu để backup!','err');return;}
+  const data={
+    version:2,
+    exportDate:new Date().toISOString(),
+    words:DB.words,
+    progress:DB.progress,
+    modeProgress:DB.modeProgress,
+    dailyLog:DB.dailyLog,
+    history:DB.history,
+    streak:DB.streak,
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`WordWise_backup_${ds(new Date()).replace(/-/g,'')}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  toast('✅ Đã xuất backup thành công!','ok');
+}
+
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.words||!Array.isArray(data.words)){toast('❌ File backup không hợp lệ!','err');return;}
+      window._restoreData=data;
+      showMod(`
+      <div class="mhdr"><div class="mttl">📦 Khôi phục Backup</div><button class="hbtn" onclick="closeMod()">✕</button></div>
+      <div class="mbdy">
+        <div style="background:var(--bg3);border-radius:var(--rs);padding:14px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">Thông tin backup</div>
+          <div style="font-size:12px;color:var(--text2);line-height:2">
+            📚 ${data.words.length} từ vựng<br>
+            📅 Ngày xuất: ${data.exportDate?new Date(data.exportDate).toLocaleDateString('vi'):'Không rõ'}<br>
+            📊 Lịch sử: ${(data.history||[]).length} lượt chơi
+          </div>
+        </div>
+        <div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.2);border-radius:var(--rs);padding:12px;font-size:12px;color:var(--red)">
+          ⚠️ Thao tác này sẽ <strong>ghi đè toàn bộ</strong> dữ liệu hiện tại (${DB.words.length} từ, ${DB.history.length} lịch sử).
+        </div>
+      </div>
+      <div style="padding:0 18px 18px;display:flex;gap:9px">
+        <button class="btn-s" onclick="closeMod()">Hủy</button>
+        <button class="btn-p" style="flex:1;background:var(--red);border-color:var(--red)" onclick="confirmRestore()">⚠️ Khôi phục ngay</button>
+      </div>`);
+    }catch(err){toast('❌ Lỗi đọc file backup: '+err.message,'err');}
+  };
+  r.readAsText(file,'utf-8');input.value='';
+}
+
+function confirmRestore(){
+  const data=window._restoreData;
+  if(!data){closeMod();return;}
+  DB.words=data.words||[];
+  DB.progress=data.progress||{};
+  DB.modeProgress=data.modeProgress||{};
+  DB.dailyLog=data.dailyLog||{};
+  DB.history=data.history||[];
+  DB.streak=data.streak||{count:0,last:''};
+  window._restoreData=null;
+  save();closeMod();
+  toast(`✅ Đã khôi phục ${DB.words.length} từ + toàn bộ tiến độ!`,'ok');
+  nav('home');
+}
+
+
+function openSettings(){
+  const S=DB.settings;
+  const tog=(key,label)=>`<div class="srow2"><span>${label}</span><button class="tog ${S[key]?'on':'off'}" onclick="DB.settings['${key}']=!DB.settings['${key}'];save();this.className='tog '+(DB.settings['${key}']?'on':'off')">&nbsp;</button></div>`;
+  showMod(`
+  <div class="mhdr"><div class="mttl">⚙️ Cài đặt</div><button class="hbtn" onclick="closeMod()">✕</button></div>
+  <div class="mbdy">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">Thông tin hiển thị khi học</div>
+    ${tog('showPhonetic','Phiên âm')}
+    ${tog('showPos','Loại từ')}
+    ${tog('showColloc','Cụm từ đi kèm')}
+    ${tog('showExample','Câu ví dụ')}
+    ${tog('showLevel','Cấp độ CEFR')}
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:13px 0 9px">Phát âm tự động</div>
+    ${tog('autoSpeak','Tự đọc: từ vựng → cụm từ → ví dụ 1 → ví dụ 2 (1 lượt)')}
+    <div style="font-size:10px;color:var(--text3);margin:-3px 0 9px;line-height:1.5">Bấm nút 🔊 cạnh mỗi phần (từ vựng, cụm từ, ví dụ) để nghe lại riêng phần đó.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:13px 0 9px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Giọng đọc tiếng Anh</div>
+      <span style="font-size:10px;color:var(--ac);cursor:pointer;text-decoration:underline" onclick="loadVoices();openSettings()">🔄 Tải lại danh sách</span>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px">
+      <select id="voice-select" style="flex:1;padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:calc(12px*var(--fsr));font-family:'Inter',sans-serif" onchange="DB.settings.voiceURI=this.value||null;save();speak('Hello, nice to meet you.')">
+        <option value="">🤖 Tự động chọn (mặc định)</option>
+        ${getEnglishVoices().map(v=>`<option value="${esc(v.voiceURI)}" ${DB.settings.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
+      </select>
+      <button class="btn-s" onclick="speak('Hello, nice to meet you.')" title="Nghe thử giọng hiện tại">🔊 Nghe thử</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin:-3px 0 9px;line-height:1.65">
+      Giọng nghe robot/thiếu tự nhiên? Trên <strong>iPhone</strong>: vào <em>Cài đặt máy → Trợ năng → Nội dung đọc → Giọng nói → English</em> → tải thêm 1 giọng "Enhanced"/"Premium" (chất lượng cao hơn, cần tải về) → quay lại đây bấm "🔄 Tải lại danh sách" rồi chọn đúng giọng đó.
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:13px 0 9px">Dữ liệu & Backup</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <button class="btn-s" style="justify-content:flex-start;gap:10px" onclick="closeMod();$('xi').click()">📊 Import file Excel từ vựng</button>
+      <button class="btn-s" style="justify-content:flex-start;gap:10px" onclick="closeMod();exportBackup()">⬇️ Xuất backup (JSON) — ${DB.words.length} từ + tiến độ</button>
+      <button class="btn-s" style="justify-content:flex-start;gap:10px" onclick="closeMod();$('ji').click()">⬆️ Khôi phục từ backup (JSON)</button>
+      <button class="btn-s" style="justify-content:flex-start;gap:10px;color:var(--red);border-color:rgba(255,107,107,.3)" onclick="if(confirm('Xóa toàn bộ dữ liệu và tiến độ?')){DB.words=[];DB.progress={};DB.modeProgress={};DB.history=[];DB.dailyLog={};DB.streak={count:0,last:''};save();closeMod();nav('home');toast('Đã xóa toàn bộ dữ liệu','ok')}">🗑️ Xóa toàn bộ dữ liệu</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">localStorage: ${Math.round(JSON.stringify(DB).length/1024)}KB đang dùng</div>
+  </div>
+  <div style="padding:0 18px 16px;display:flex;justify-content:flex-end"><button class="btn-p" onclick="closeMod()">Xong</button></div>`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// IMPORT EXCEL
+// ══════════════════════════════════════════════════════════════
+// Đọc + chuẩn hoá dữ liệu từ 1 arrayBuffer Excel (dùng chung cho import file & cập nhật từ GitHub)
+function parseExcelBuffer(buf){
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=wb.Sheets['DATA']||wb.Sheets[wb.SheetNames[0]];
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  let hi=0;
+  for(let i=0;i<Math.min(5,data.length);i++){if(data[i].some(c=>String(c).match(/từ vựng|word|vocab/i))){hi=i;break;}}
+  const hdr=data[hi].map(h=>String(h).toLowerCase().trim());
+  const gi=names=>{for(const n of names){const i=hdr.findIndex(h=>h.includes(n));if(i>=0)return i;}return-1;};
+  const fi={
+    word:gi(['từ vựng','word','vocab','english']),
+    phonetic:gi(['phiên âm','phonetic']),
+    type:gi(['loại từ','type','pos']),
+    collocations:gi(['cụm từ','colloc']),
+    ex1:gi(['ví dụ 1','example 1','ví dụ','example']),
+    ex2:gi(['ví dụ 2','example 2']),
+    meaning:gi(['nghĩa','meaning','vietnamese']),
+    level:gi(['cấp độ','level','cefr']),
+    grade:gi(['lớp','grade','trình độ']),
+    unit:gi(['unit']),
+    topic:gi(['chủ đề','topic']),
+    specialGroup:gi(['nhóm đặc biệt','special']),
+    root:gi(['gốc từ','root']),
+  };
+  const words=data.slice(hi+1)
+    .filter(r=>r[fi.word>=0?fi.word:0]&&String(r[fi.word>=0?fi.word:0]).trim()&&!String(r[0]).startsWith('➕'))
+    .map(r=>({
+      word:String(r[fi.word>=0?fi.word:0]||'').trim(),
+      phonetic:fi.phonetic>=0?String(r[fi.phonetic]||'').trim():'',
+      type:fi.type>=0?String(r[fi.type]||'').trim():'',
+      collocations:fi.collocations>=0?String(r[fi.collocations]||'').trim():'',
+      ex1:fi.ex1>=0?String(r[fi.ex1]||'').trim():'',
+      ex2:fi.ex2>=0?String(r[fi.ex2]||'').trim():'',
+      meaning:String(r[fi.meaning>=0?fi.meaning:1]||'').trim(),
+      level:fi.level>=0?String(r[fi.level]||'').trim():'',
+      grade:fi.grade>=0?String(r[fi.grade]||'').trim():'',
+      unit:fi.unit>=0?String(r[fi.unit]||'').trim():'',
+      topic:fi.topic>=0?String(r[fi.topic]||'').trim():'',
+      specialGroup:fi.specialGroup>=0?String(r[fi.specialGroup]||'').trim():'',
+      root:fi.root>=0?String(r[fi.root]||'').trim():'',
+    })).filter(w=>w.word&&w.meaning);
+  // Gán ID ổn định theo nội dung (không random) để import lại vẫn giữ được tiến độ học.
+  // Nếu 2 dòng có nội dung giống hệt nhau (trùng key), thêm hậu tố để tránh đè ID.
+  const seen={};
+  words.forEach(w=>{
+    const base=stableId(w);
+    const n=(seen[base]=(seen[base]||0)+1);
+    w.id=n>1?base+'_'+n:base;
+  });
+  return words;
+}
+// Hiện màn hình xem trước + xác nhận import (dùng chung cho cả 2 nguồn: file máy & GitHub)
+function showImportPreview(words,sourceLabel){
+  if(!words.length){toast('❌ Không tìm thấy dữ liệu! Kiểm tra lại file.','err');return;}
+  const hasOld=DB.words.length>0;
+  const grades=[...new Set(words.map(w=>w.grade).filter(Boolean))].sort();
+  const levels=[...new Set(words.map(w=>w.level).filter(Boolean))].sort();
+  window._importWords=words;
+  showMod(`
+  <div class="mhdr">
+    <div class="mttl">📊 Preview — ${words.length} từ vựng</div>
+    <button class="hbtn" onclick="closeMod()">✕</button>
+  </div>
+  <div class="mbdy">
+    ${sourceLabel?`<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Nguồn: ${esc(sourceLabel)}</div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center">
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:10px">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--ac)">${words.length}</div>
+        <div style="font-size:11px;color:var(--text2)">Từ vựng</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:10px">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--ac)">${grades.length}</div>
+        <div style="font-size:11px;color:var(--text2)">Lớp</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:10px">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--ac)">${levels.length}</div>
+        <div style="font-size:11px;color:var(--text2)">Cấp độ</div>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border-radius:var(--rs);padding:10px;margin-bottom:12px;max-height:130px;overflow-y:auto">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">Ví dụ từ đầu tiên</div>
+      ${words.slice(0,3).map(w=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:600;font-family:'DM Mono',monospace">${esc(w.word)}</span><span style="color:var(--text2)">${esc(w.meaning)}</span><span style="color:var(--text3);font-size:10px">${esc(w.grade||'')} ${esc(w.unit||'')}</span></div>`).join('')}
+    </div>
+    ${hasOld?`<div style="background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.25);border-radius:var(--rs);padding:12px;margin-bottom:4px">
+      <div style="font-size:12px;font-weight:600;color:var(--yel);margin-bottom:8px">⚠️ Đã có ${DB.words.length} từ trong máy</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:6px">
+        <input type="radio" name="iopt" value="replace" checked style="accent-color:var(--ac)"> Thay thế toàn bộ (xóa tiến độ cũ)
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="radio" name="iopt" value="keep" style="accent-color:var(--ac)"> Thay thế từ, <strong>giữ tiến độ học</strong>
+      </label>
+    </div>`:''}
+  </div>
+  <div style="padding:0 18px 18px;display:flex;gap:9px">
+    <button class="btn-s" onclick="closeMod()">Hủy</button>
+    <button class="btn-p" style="flex:1" onclick="confirmImport()">✅ Xác nhận Import</button>
+  </div>`);
+}
+function importXL(input){
+  const file=input.files[0];if(!file)return;
+  toast('⏳ Đang đọc file...');
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const words=parseExcelBuffer(e.target.result);
+      showImportPreview(words,file.name);
+    }catch(err){toast('❌ Lỗi đọc file: '+err.message,'err');}
+  };
+  r.onerror=()=>toast('❌ Không đọc được file!','err');
+  r.readAsArrayBuffer(file);input.value='';
+}
+
+// ══════════════════════════════════════════════════════════════
+// CẬP NHẬT TỪ VỰNG TỪ GITHUB — tự tải file Excel mới nhất trong repo về, không cần chuyển file thủ công.
+// Repo: dothanhloi20hc/English, nhánh main, file Vocab.xlsx
+// ══════════════════════════════════════════════════════════════
+const GITHUB_XLSX_URL='https://raw.githubusercontent.com/dothanhloi20hc/English/main/Vocab.xlsx';
+function updateFromGitHub(){
+  toast('⏳ Đang tải Vocab.xlsx từ GitHub...');
+  // Thêm ?t=timestamp để né cache của trình duyệt/CDN, luôn lấy đúng bản mới nhất vừa Commit
+  fetch(GITHUB_XLSX_URL+'?t='+Date.now())
+    .then(res=>{
+      if(!res.ok)throw new Error(res.status===404?'Không tìm thấy file Vocab.xlsx trong repo (kiểm tra lại tên file/tên repo/nhánh)':'Lỗi tải file ('+res.status+')');
+      return res.arrayBuffer();
+    })
+    .then(buf=>{
+      const words=parseExcelBuffer(buf);
+      showImportPreview(words,'GitHub — dothanhloi20hc/English/Vocab.xlsx');
+    })
+    .catch(err=>{
+      toast('❌ '+(err.message||'Không cập nhật được — kiểm tra kết nối mạng!'),'err');
+    });
+}
+
+function confirmImport(){
+  const words=window._importWords||[];
+  if(!words.length){closeMod();return;}
+  const opt=document.querySelector('input[name="iopt"]:checked');
+  const keepProgress=opt&&opt.value==='keep';
+  const oldProg=DB.progress;const oldMP=DB.modeProgress;const oldDL=DB.dailyLog;
+  DB.words=words;
+  if(keepProgress){DB.progress=oldProg;DB.modeProgress=oldMP;DB.dailyLog=oldDL;}
+  else{DB.progress={};DB.modeProgress={};DB.dailyLog={};}
+  window._importWords=null;
+  save();closeMod();
+  toast(`✅ Đã import ${words.length} từ vựng!`,'ok');
+  nav('home');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════════════
+function showMod(html){$('ov').style.display='block';$('mb').style.display='block';$('mb').innerHTML=html;}
+function closeMod(){$('ov').style.display='none';$('mb').style.display='none';}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// MOBILE BOTTOM NAV
+// ══════════════════════════════════════════════════════════════
+function bnNav(v){
+  document.querySelectorAll('.bn-item').forEach(e=>e.classList.remove('active'));
+  $('bn-'+v)?.classList.add('active');
+  nav(v);
+}
+
+// Mobile mode selector — opens a bottom sheet with mode options
+function openMobileMode(){
+  const cur=DB.settings.mode;
+  showMod(`
+  <div class="mhdr"><div class="mttl">🎮 Chọn chế độ luyện tập</div><button class="hbtn" onclick="closeMod()">✕</button></div>
+  <div class="mbdy">
+    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:8px">
+      ${Object.entries(modeLabels).map(([m,lbl])=>`
+      <button style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--rs);border:2px solid ${m===cur?'var(--ac)':'var(--border)'};background:${m===cur?'rgba(0,201,167,.08)':'var(--bg3)'};color:${m===cur?'var(--ac)':'var(--text)'};cursor:pointer;font-size:14px;font-weight:500;font-family:'Inter',sans-serif;transition:all .14s;text-align:left;width:100%" onclick="setMode('${m}');closeMod()">
+        <span style="font-size:20px">${lbl.split(' ')[0]}</span>
+        <span>${lbl.split(' ').slice(1).join(' ')}</span>
+        ${m===cur?'<span style="margin-left:auto;font-size:12px;color:var(--ac)">✓ Đang chọn</span>':''}
+      </button>`).join('')}
+    </div>
+  </div>`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// PWA — Service Worker (manifest.json là file tĩnh riêng, xem thẻ <link rel="manifest"> ở <head>)
+// ══════════════════════════════════════════════════════════════
+function initPWA(){
+  // Register Service Worker for offline caching
+  if('serviceWorker' in navigator){
+    const swCode=`
+const CACHE='wordwise-v4';
+const SELF=self.location.href;
+// Precache thêm font, thư viện xlsx, manifest, icon & Vocab.xlsx ngay từ lúc cài đặt, để app
+// tự có sẵn từ vựng (bootstrap) ngay cả khi mở lần sau mà không có mạng.
+const PRECACHE=[
+  SELF,
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-512-maskable.png',
+  'https://raw.githubusercontent.com/dothanhloi20hc/English/main/Vocab.xlsx',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap'
+];
+self.addEventListener('install',e=>{
+  e.waitUntil(
+    caches.open(CACHE).then(c=>Promise.all(
+      PRECACHE.map(u=>fetch(u).then(r=>r.ok&&c.put(u,r)).catch(()=>{}))
+    ))
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(
+    caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+      const clone=res.clone();
+      caches.open(CACHE).then(c=>c.put(e.request,clone));
+      return res;
+    })).catch(()=>caches.match(SELF))
+  );
+});`;
+    try{
+      const blob=new Blob([swCode],{type:'application/javascript'});
+      const url=URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url,{scope:'./'}).then(()=>{
+        console.log('WordWise SW registered');
+      }).catch(e=>console.log('SW reg failed (normal on file://)'));
+    }catch(e){}
+  }
+
+  // Show "Add to Home Screen" prompt on Android Chrome
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredPrompt=e;
+    // Show install toast after 3s
+    setTimeout(()=>{
+      if(!localStorage.getItem('ww_installed')){
+        const t=$('toast');
+        if(t){
+          t.innerHTML='📱 <strong>Cài WordWise</strong> lên màn hình chính? <button onclick="installPWA()" style="margin-left:8px;background:var(--ac);color:#0D1B2A;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;font-weight:600">Cài ngay</button>';
+          t.className='toast show ok';
+          setTimeout(()=>t.classList.remove('show'),8000);
+        }
+      }
+    },3000);
+  });
+  window.installPWA=function(){
+    if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(r=>{if(r.outcome==='accepted')localStorage.setItem('ww_installed','1');deferredPrompt=null;});}
+  };
+  window.addEventListener('appinstalled',()=>{localStorage.setItem('ww_installed','1');toast('✅ Đã cài WordWise lên màn hình chính!','ok');});
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+load();applyT();applyFS();applyMode();
+// Desktop sidebar toggle button
+if(window.innerWidth<=720)$('sbtg').style.display='none'; // hidden — using bottom nav instead
+window.addEventListener('resize',()=>{
+  const mob=window.innerWidth<=720;
+  $('sbtg').style.display='none'; // always hidden, sidebar replaced by bottom nav
+  if(!mob)$('sb').classList.remove('open');
+});
+initPWA();
+nav('home');
+</script>
+</body>
+</html>
